@@ -1,0 +1,17 @@
+[
+  type is gui
+  title is "Hello from UCL"
+  window style is {"font_size": 16, "padding": 10}
+  show label "What is your name?" is #greeting
+  show input "Name" is #name
+  show checkbox "Use uppercase" is #uppercase
+  show button "Say hello" is #hello
+
+  when button #hello is clicked [
+    read input #name into name
+    read input #uppercase into loud
+    if loud [ set name to upper(name) ]
+    label #greeting text is "Hello, " + name + "!"
+    log info "Greeting updated"
+  ]
+]

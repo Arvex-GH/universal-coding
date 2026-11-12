@@ -1,4 +1,6 @@
 import json
+import re
+import http.cookiejar
 import shutil
 import subprocess
 import tempfile
@@ -233,7 +235,10 @@ class HTTPTests(unittest.TestCase):
     def test_browser_button(self):
         self.start(Path('examples/browser.ucl').read_text())
         self.assertIn(b'Click Me!', self.request('/')[1])
-        self.assertIn(b'Hello from UCL!', self.request('/__ucl/click/hello', b'')[1])
+        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+        page = opener.open(self.url + '/').read().decode()
+        token = re.search(r'name="_csrf" value="([^"]+)"', page).group(1)
+        self.assertIn(b'Hello from UCL!', opener.open(self.url + '/__ucl/click/hello', data=('_csrf=' + token).encode()).read())
 
     def test_query(self):
         self.start('[type is server\nwhen get "/" [respond request.query]]')

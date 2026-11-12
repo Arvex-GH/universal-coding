@@ -3,14 +3,55 @@
   "name": "UCL",
   "scopeName": "source.ucl",
   "patterns": [
-    {"name": "comment.line.double-slash.ucl", "match": "//.*$"},
-    {"name": "string.quoted.double.ucl", "begin": "\"", "end": "\"", "patterns": [{"name": "constant.character.escape.ucl", "match": "\\\\."}]},
-    {"name": "string.quoted.single.ucl", "begin": "'", "end": "'", "patterns": [{"name": "constant.character.escape.ucl", "match": "\\\\."}]},
-    {"name": "entity.name.tag.ucl", "match": "#[\\w-]+"},
-    {"name": "constant.numeric.ucl", "match": "\\b[0-9]+(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\\b"},
-    {"name": "constant.language.ucl", "match": "\\b(?:true|false|nothing)\\b"},
-    {"name": "keyword.control.ucl", "match": "(?i)\\b(?:type|is|gui|browser|terminal|server|database|title|port|host|ask|for|number|into|let|be|set|to|say|print|if|otherwise|repeat|times|return|call|object|create|from|show|button|text|looks|padding|when|clicked|respond|status|execute|query|on|using|get|post|put|delete|patch)\\b"},
-    {"name": "keyword.operator.ucl", "match": "\\b(?:and|or|not|in)\\b|==|!=|<=|>=|[+*/%<>-]"},
-    {"name": "punctuation.section.block.ucl", "match": "[\\[\\]]"}
+    {
+      "name": "comment.line.double-slash.ucl",
+      "match": "//.*$"
+    },
+    {
+      "name": "string.quoted.double.ucl",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.ucl",
+          "match": "\\\\."
+        }
+      ]
+    },
+    {
+      "name": "string.quoted.single.ucl",
+      "begin": "'",
+      "end": "'",
+      "patterns": [
+        {
+          "name": "constant.character.escape.ucl",
+          "match": "\\\\."
+        }
+      ]
+    },
+    {
+      "name": "entity.name.tag.ucl",
+      "match": "#[\\w-]+"
+    },
+    {
+      "name": "constant.numeric.ucl",
+      "match": "\\b[0-9]+(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\\b"
+    },
+    {
+      "name": "constant.language.ucl",
+      "match": "\\b(?:true|false|nothing)\\b"
+    },
+    {
+      "name": "keyword.control.ucl",
+      "match": "(?i)\\b(?:close|enable|disable|hide|reveal|label|input|checkbox|read|style|window|size|layout|vertical|horizontal|value|debugging|log|debug|info|warning|error|text|secret|every|milliseconds|while|for|each|break|continue|try|catch|assert|append|write|file|html|header|require|else|transaction|settings|http|type|is|gui|browser|terminal|server|database|title|port|host|ask|for|number|into|let|be|set|to|say|print|if|otherwise|repeat|times|return|call|object|create|from|show|button|text|looks|padding|when|clicked|respond|status|execute|query|on|using|get|post|put|delete|patch)\\b"
+    },
+    {
+      "name": "keyword.operator.ucl",
+      "match": "\\b(?:and|or|not|in)\\b|==|!=|<=|>=|[+*/%<>-]"
+    },
+    {
+      "name": "punctuation.section.block.ucl",
+      "match": "[\\[\\]]"
+    }
   ]
 }

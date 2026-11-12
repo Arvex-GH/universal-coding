@@ -2,7 +2,7 @@
 const path = require('node:path');
 
 function activate(context, vscode = require('vscode')) {
-  async function execute(action) {
+  async function execute(action, trace = false) {
     if (!vscode.workspace.isTrusted) {
       vscode.window.showErrorMessage('Trust this workspace before running UCL code.');
       return;
@@ -19,14 +19,15 @@ function activate(context, vscode = require('vscode')) {
     const task = new vscode.Task(
       {type: 'ucl', action, file}, folder || vscode.TaskScope.Global,
       `${action}: ${path.basename(file)}`, 'UCL',
-      new vscode.ProcessExecution('ucl', [action, file], {cwd: path.dirname(file)})
+      new vscode.ProcessExecution('ucl', [action, file, ...(trace ? ['--trace'] : [])], {cwd: path.dirname(file)})
     );
     task.presentationOptions = {reveal: vscode.TaskRevealKind.Always, focus: true, panel: vscode.TaskPanelKind.Dedicated};
     await vscode.tasks.executeTask(task);
   }
   context.subscriptions.push(
     vscode.commands.registerCommand('ucl.runFile', () => execute('run')),
-    vscode.commands.registerCommand('ucl.checkFile', () => execute('check'))
+    vscode.commands.registerCommand('ucl.checkFile', () => execute('check')),
+    vscode.commands.registerCommand('ucl.traceFile', () => execute('run', true))
   );
 }
 

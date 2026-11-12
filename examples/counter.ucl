@@ -1,0 +1,21 @@
+[
+  type is gui
+  type is terminal
+  title is "UCL Click Counter"
+  window size is 420 x 320
+  window style is {"background": "white", "font_size": 14, "padding": 12}
+  debugging is on
+
+  let clicks be 0
+  show label "0" is #counter
+  style #counter is {"font_size": 48, "font_weight": "bold", "color": "navy"}
+  show button "Click me!" is #click
+  style #click is {"background": "blue", "color": "white", "padding": 15}
+
+  when button #click is clicked [
+    set clicks to clicks + 1
+    label #counter text is text(clicks)
+    say "Clicked " + text(clicks) + " times"
+    log debug "Updated counter label"
+  ]
+]

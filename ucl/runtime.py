@@ -3,13 +3,18 @@ import ast
 import html
 import json
 import math
+import os
+import sys
+import time
+from pathlib import Path
+from contextlib import contextmanager, nullcontext
 import operator
 import re
 import sqlite3
 import threading
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlsplit, parse_qs
 from .language import UCLError, classify, validate
+from .ui import UI, checked_style
+from .values import parse_json
 
 
 class Returned(Exception):
@@ -17,7 +22,13 @@ class Returned(Exception):
 
 
 class Reply(Exception):
-    def __init__(self, value): self.value = value
+    def __init__(self, value, kind='json'): self.value, self.kind = value, kind
+
+
+class LoopBreak(Exception): pass
+
+
+class LoopContinue(Exception): pass
 
 
 class UCLObject(dict):
@@ -28,13 +39,14 @@ class UCLObject(dict):
 
 
 class Runtime:
-    def __init__(self, nodes, output=print, input_fn=None):
+    def __init__(self, nodes, output=print, input_fn=None, diagnostic_fn=None):
         self.nodes = nodes
         self.types = validate(nodes)
         self.env = {}
         self.functions = {}
         self.databases = {}
-        self.buttons = {}
+        self.ui = UI(self)
+        self.buttons = self.ui.buttons
         self.handlers = {}
         self.routes = {}
         self.labels = []
@@ -44,22 +56,45 @@ class Runtime:
         self.port = 8080
         self.host = '127.0.0.1'
         self.lock = threading.RLock()
-        self.widgets = {}
+        self.widgets = self.ui.widgets
+        self.timers = []
+        self.http_settings = {}
+        self.debug = False
+        self.trace = False
+        self.log_format = 'text'
+        self.diagnostic = diagnostic_fn or (lambda message: print(message, file=sys.stderr))
+        self.log_file = None
+        self.source_name = '<program>'
+        self.arguments = []
+        self._steps = None
+        self._transactions = set()
         self.prepared = False
 
     def expr(self, text, env=None):
         env = self.env if env is None else env
         builtins = {'length': len, 'text': str, 'number': float, 'integer': int,
                     'list': lambda *x: list(x), 'min': min, 'max': max, 'round': round,
-                    'json': json.dumps, 'parse_json': json.loads, 'abs': abs,
+                    'json': lambda value: json.dumps(value, allow_nan=False), 'parse_json': parse_json, 'abs': abs,
                     'item': operator.getitem, 'keys': lambda x: list(x.keys()),
-                    'values': lambda x: list(x.values())}
+                    'values': lambda x: list(x.values()),
+                    'environment': lambda name, default='': os.environ.get(name, default),
+                    'argument': lambda index: self.arguments[index],
+                    'upper': lambda value: str(value).upper(), 'lower': lambda value: str(value).lower(),
+                    'trim': lambda value: str(value).strip(),
+                    'split': lambda value, separator=None: str(value).split(separator),
+                    'join': lambda values, separator='': separator.join(str(v) for v in values),
+                    'replace': lambda value, old, new: str(value).replace(old, new),
+                    'contains': lambda value, part: part in value,
+                    'range': lambda *args: range(*args), 'type_of': lambda value: type(value).__name__,
+                    'floor': math.floor, 'ceil': math.ceil, 'sqrt': math.sqrt, 'escape_html': html.escape}
+
         binary = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
                   ast.Div: operator.truediv, ast.Mod: operator.mod, ast.FloorDiv: operator.floordiv}
         compare = {ast.Eq: operator.eq, ast.NotEq: operator.ne, ast.Lt: operator.lt,
                    ast.LtE: operator.le, ast.Gt: operator.gt, ast.GtE: operator.ge,
                    ast.In: lambda a,b: a in b, ast.NotIn: lambda a,b: a not in b}
         def visit(n):
+            self.step()
             if isinstance(n, ast.Constant): return n.value
             if isinstance(n, ast.Name):
                 if n.id in {'true', 'false', 'nothing'}: return {'true': True, 'false': False, 'nothing': None}[n.id]
@@ -174,10 +209,28 @@ class Runtime:
                 if not entries or residue.strip(' ;') or len(entries) != int(count or 1): raise UCLError(f'line {n.line}: button count or definition is invalid')
                 for label, ident in entries:
                     if ident in self.buttons: raise UCLError(f'duplicate button #{ident}')
-                    self.buttons[ident] = {'text': str(self.expr(label)), 'color': None, 'padding': 8}
-            elif kind == 'label': self.labels.append(str(self.expr(a[0])))
+                    self.ui.add('button', ident, self.expr(label))
+            elif kind == 'label':
+                text = str(self.expr(a[0]))
+                self.labels.append(text)
+                self.ui.add('label', f'_label_{len(self.labels)}', text)
+            elif kind in {'label_named', 'input', 'checkbox'}:
+                self.ui.add('label' if kind == 'label_named' else kind, a[1], self.expr(a[0]))
+            elif kind == 'window_style': self.ui.window_style = checked_style(self.expr(a[0]))
+            elif kind == 'window_size':
+                self.ui.size = tuple(map(int, a))
+                if any(not 100 <= x <= 4096 for x in self.ui.size): raise UCLError('window dimensions must be 100–4096')
+            elif kind == 'layout': self.ui.direction = a[0].lower()
+            elif kind == 'debugging': self.debug = a[0].lower() == 'on'
+            elif kind == 'http_settings':
+                from .http import settings
+                self.http_settings = settings(self.expr(a[0]))
+            elif kind == 'timer':
+                if not 10 <= int(a[0]) <= 86400000: raise UCLError('timer interval must be 10–86400000 milliseconds')
+                self.timers.append((int(a[0]), n.children))
         for n in self.nodes:
             kind, a = classify(n)
+            if kind == 'widget_style': self.ui.style(a[0], self.expr(a[1]))
             if kind in {'style', 'click'}:
                 ident = a[0]
                 if ident not in self.buttons: raise UCLError(f'unknown button #{ident}')
@@ -187,8 +240,12 @@ class Runtime:
                 else:
                     m = re.fullmatch(r'([A-Za-z]+|#[0-9a-fA-F]{6})(?:\s*\+\s*padding is (\d+))?', a[1])
                     if not m: raise UCLError('style must be COLOR + padding is NUMBER')
+                    checked_style({'background': m[1]})
                     self.buttons[ident]['color'] = m[1]
-                    if m[2]: self.buttons[ident]['padding'] = int(m[2])
+                    if m[2]:
+                        checked_style({'padding': int(m[2])})
+                        self.buttons[ident]['padding'] = int(m[2])
+                        self.buttons[ident]['legacy_padding'] = True
         self.prepared = True
 
     def make_object(self, children):
@@ -220,11 +277,42 @@ class Runtime:
             pending = remaining
         return obj
 
+    def log(self, level, message, **fields):
+        if level == 'debug' and not self.debug: return
+        record = {'time': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+                  'level': level, 'message': str(message), **fields}
+        line = json.dumps(record, ensure_ascii=True) if self.log_format == 'json' else f'[{level.upper()}] {message}' + (f' request_id={fields["request_id"]}' if 'request_id' in fields else '')
+        # Keep a log entry on one terminal line; JSON escapes control characters.
+        if self.log_format != 'json':
+            line = ''.join({'\r': r'\r', '\n': r'\n', '\t': r'\t'}.get(c, f'\\x{ord(c):02x}') if ord(c) < 32 or ord(c) == 127 else c for c in line)
+        self.diagnostic(line)
+        if self.log_file:
+            try:
+                with Path(self.log_file).open('a', encoding='utf-8') as stream: stream.write(line + '\n')
+            except OSError:
+                self.log_file = None
+                self.diagnostic('[ERROR] Cannot write diagnostic log file; continuing with terminal logging only.')
+
+    @contextmanager
+    def budget(self, maximum):
+        previous = self._steps
+        self._steps = maximum
+        try: yield
+        finally: self._steps = previous
+
+    def step(self):
+        if self._steps is not None:
+            self._steps -= 1
+            if self._steps < 0: raise UCLError('execution step limit exceeded')
+
     def execute(self, nodes=None, env=None):
         env = self.env if env is None else env
         last_if = False
+        caught_error = None
         for n in self.nodes if nodes is None else nodes:
             kind, a = classify(n)
+            self.step()
+            if self.trace: self.log('debug', f'{self.source_name}:{n.line}: {kind}')
             try:
                 if kind == 'let':
                     if env is self.env and any(n is item for item in self.nodes) and n.text.lower().startswith('let '): continue
@@ -259,7 +347,92 @@ class Runtime:
                             continue
                         env[a[1]] = value
                         break
+                elif kind == 'ask_text':
+                    prompt = str(self.expr(a[1], env))
+                    try:
+                        if a[0].lower() == 'secret':
+                            import getpass
+                            env[a[2]] = getpass.getpass(prompt)
+                        else: env[a[2]] = self.input(prompt)
+                    except EOFError as e: raise UCLError('input ended before text was entered') from e
+                elif kind == 'log': self.log(a[0].lower(), self.expr(a[1], env))
                 elif kind == 'print': self.output(self.expr(a[0], env))
+                elif kind == 'assert':
+                    if not self.expr(a[0], env): raise UCLError('assertion failed: ' + a[0])
+                elif kind == 'read_file': env[a[1]] = Path(self.expr(a[0], env)).read_text(encoding='utf-8')
+                elif kind == 'write_file':
+                    value, path = str(self.expr(a[1], env)), Path(self.expr(a[2], env))
+                    with path.open('a' if a[0].lower() == 'append' else 'w', encoding='utf-8') as stream: stream.write(value)
+                elif kind == 'append':
+                    if a[1] not in env or not isinstance(env[a[1]], list): raise UCLError('append requires a declared list')
+                    env[a[1]].append(self.expr(a[0], env))
+                elif kind == 'try':
+                    caught_error = None
+                    try: self.execute(n.children, env)
+                    except UCLError as e:
+                        # Execution quotas cannot be caught to escape their limit.
+                        if self._steps is not None and self._steps < 0: raise
+                        caught_error = str(e)
+                elif kind == 'catch':
+                    if caught_error is not None:
+                        env[a[0]] = caught_error
+                        self.execute(n.children, env)
+                elif kind == 'break': raise LoopBreak()
+                elif kind == 'continue': raise LoopContinue()
+                elif kind in {'while', 'for'}:
+                    iterable = self.expr(a[1], env) if kind == 'for' else None
+                    if kind == 'for' and not isinstance(iterable, (list, tuple, str, dict, range)):
+                        raise UCLError('for each requires a collection')
+                    iterator = iter(iterable) if kind == 'for' else None
+                    while True:
+                        self.step()
+                        if kind == 'while':
+                            if not self.expr(a[0], env): break
+                        else:
+                            try: env[a[0]] = next(iterator)
+                            except StopIteration: break
+                        try: self.execute(n.children, env)
+                        except LoopBreak: break
+                        except LoopContinue: continue
+                elif kind == 'close_window': self.ui.close()
+                elif kind == 'label_update': self.ui.update(a[0], self.expr(a[1], env), 'label')
+                elif kind == 'input_update':
+                    spec = self.ui.get(a[0])
+                    if spec['kind'] not in {'input', 'checkbox'}: raise UCLError('input update requires input or checkbox')
+                    value = self.expr(a[1], env)
+                    if spec['kind'] == 'checkbox' and type(value) is not bool: raise UCLError('checkbox values must be true or false')
+                    self.ui.update(a[0], value, spec['kind'])
+                elif kind == 'read_input': env[a[1]] = self.ui.read(a[0])
+                elif kind == 'widget_state': self.ui.state(a[1], a[0].lower())
+                elif kind == 'widget_style': self.ui.style(a[0], self.expr(a[1], env))
+                elif kind == 'header':
+                    from .http import response_header
+                    name, value = response_header(self.expr(a[0], env), self.expr(a[1], env))
+                    env['_headers'][name] = value
+                elif kind == 'require':
+                    if not self.expr(a[0], env):
+                        code = int(a[1])
+                        if not 400 <= code <= 599: raise UCLError('require status must be 400–599')
+                        env['_status'] = code
+                        raise Reply({'error': 'request rejected'})
+                elif kind == 'respond_typed': raise Reply(self.expr(a[1], env), a[0].lower())
+                elif kind == 'transaction':
+                    db = a[0]
+                    if db not in self.databases: raise UCLError(f'unknown database: {db}')
+                    if db in self._transactions: raise UCLError('nested transactions on the same database are not supported')
+                    connection = self.databases[db]
+                    self._transactions.add(db)
+                    try:
+                        connection.execute('BEGIN IMMEDIATE')
+                        try: self.execute(n.children, env)
+                        except (Returned, LoopBreak, LoopContinue):
+                            connection.commit()
+                            raise
+                        except BaseException:
+                            connection.rollback()
+                            raise
+                        else: connection.commit()
+                    finally: self._transactions.remove(db)
                 elif kind == 'call': self.expr(f'{a[0]}({a[1]})', env)
                 elif kind == 'return': raise Returned(self.expr(a[0], env))
                 elif kind == 'if':
@@ -270,7 +443,11 @@ class Runtime:
                 elif kind == 'repeat':
                     count = self.expr(a[0], env)
                     if type(count) is not int or count < 0: raise UCLError('repeat count must be a nonnegative integer')
-                    for _ in range(count): self.execute(n.children, env)
+                    for _ in range(count):
+                        self.step()
+                        try: self.execute(n.children, env)
+                        except LoopBreak: break
+                        except LoopContinue: continue
                 elif kind == 'respond': raise Reply(self.expr(a[0], env))
                 elif kind == 'status':
                     code = int(a[0])
@@ -280,20 +457,26 @@ class Runtime:
                     sql, db, params = a[:3]
                     if db not in self.databases: raise UCLError(f'unknown database: {db}')
                     connection = self.databases[db]
-                    with connection:
+                    with (nullcontext() if db in self._transactions else connection):
                         cur = connection.execute(self.expr(sql, env), self.expr(params, env) if params else ())
                         if kind == 'query':
                             if cur.description is None: raise UCLError('query requires a statement that returns rows; use execute for schema changes')
                             env[a[3]] = [dict(zip([d[0] for d in cur.description], row)) for row in cur.fetchall()]
                 elif kind == 'text':
                     if a[0] not in self.buttons: raise UCLError(f'unknown button #{a[0]}')
-                    self.buttons[a[0]]['text'] = str(self.expr(a[1], env))
-                    if a[0] in self.widgets: self.widgets[a[0]].configure(text=self.buttons[a[0]]['text'])
-            except (UCLError, sqlite3.Error) as e:
+                    self.ui.update(a[0], self.expr(a[1], env), 'button')
+            except (UCLError, sqlite3.Error, OSError, ValueError, TypeError, RuntimeError) as e:
                 raise UCLError(f'line {n.line}: {e}') from e
 
     def close(self):
+        server = getattr(self, '_server', None)
+        if server:
+            server.server_close()
+            if server.server.task_dispatcher.threads:
+                self.log('warning', 'HTTP workers are still active; database cleanup deferred to avoid closing in-use connections')
+                return
         for connection in self.databases.values(): connection.close()
+        self.databases.clear()
 
     def run(self):
         self.prepare()
@@ -318,74 +501,12 @@ class Runtime:
             raise UCLError(f'desktop renderer: {e}') from e
 
     def populate_desktop(self, tk, window):
-        window.title(self.title)
-        for label in self.labels: tk.Label(window, text=label).pack(padx=12, pady=6)
-        for ident, spec in self.buttons.items():
-            options = {'text': spec['text'], 'padx': spec['padding'], 'pady': spec['padding']}
-            if spec['color']: options.update(bg=spec['color'], fg='white')
-            def click(key=ident):
-                try: self.execute(self.handlers.get(key, []))
-                except UCLError as e:
-                    from tkinter.messagebox import showerror
-                    showerror('UCL error', str(e))
-            widget = tk.Button(window, command=click, **options)
-            widget.pack(padx=12, pady=6)
-            self.widgets[ident] = widget
-        window.mainloop()
+        self.ui.mount(tk, window)
 
     def page(self):
-        content = ''.join('<p>' + html.escape(x) + '</p>' for x in self.labels)
-        for ident, spec in self.buttons.items():
-            style = f'padding:{spec["padding"]}px;'
-            if spec['color']: style += f'background:{spec["color"]};color:white;'
-            content += '<form method="post" action="/__ucl/click/' + html.escape(ident, quote=True) + '"><button style="' + style + '">' + html.escape(spec['text']) + '</button></form>'
-        return '<!doctype html><html><head><meta charset="utf-8"><title>' + html.escape(self.title) + '</title></head><body>' + content + '</body></html>'
+        return self.ui.page('')
 
     def make_server(self):
-        runtime = self
-        class Handler(BaseHTTPRequestHandler):
-            def log_message(self, *args): pass
-            def handle_request(self):
-                with runtime.lock:
-                    parsed = urlsplit(self.path)
-                    try:
-                        length = int(self.headers.get('Content-Length', '0'))
-                        if length < 0 or length > 1048576: return self.send_value(413, {'error': 'body too large'})
-                        raw = self.rfile.read(length).decode('utf-8')
-                        if 'browser' in runtime.types:
-                            if self.command == 'GET' and parsed.path == '/': return self.send_value(200, runtime.page(), True)
-                            if self.command == 'POST' and parsed.path.startswith('/__ucl/click/'):
-                                # Same-origin forms only; reject cross-site browser submissions.
-                                origin = self.headers.get('Origin')
-                                if origin and urlsplit(origin).netloc != self.headers.get('Host'): return self.send_value(403, {'error': 'cross-origin request'})
-                                ident = parsed.path.rsplit('/', 1)[-1]
-                                if ident not in runtime.buttons: return self.send_value(404, {'error': 'unknown button'})
-                                runtime.execute(runtime.handlers.get(ident, []))
-                                self.send_response(303)
-                                self.send_header('Location', '/')
-                                self.send_header('Content-Length', '0')
-                                self.end_headers()
-                                return
-                        body = runtime.routes.get((self.command, parsed.path))
-                        if body is None: return self.send_value(404, {'error': 'not found'})
-                        env = dict(runtime.env)
-                        env['request'] = {'method': self.command, 'path': parsed.path, 'query': parse_qs(parsed.query), 'body': raw, 'headers': dict(self.headers)}
-                        env['_status'] = 200
-                        try: runtime.execute(body, env)
-                        except Reply as r: return self.send_value(env['_status'], r.value)
-                        return self.send_value(env['_status'], None)
-                    except (UCLError, ValueError, TypeError, UnicodeError, RecursionError) as e:
-                        runtime.output(str(e))
-                        return self.send_value(500, {'error': 'request failed'})
-            def send_value(self, status, value, markup=False):
-                data = (value if markup else json.dumps(value)).encode('utf-8')
-                self.send_response(status)
-                self.send_header('Content-Type', 'text/html; charset=utf-8' if markup else 'application/json; charset=utf-8')
-                self.send_header('Content-Length', str(len(data)))
-                self.send_header('X-Content-Type-Options', 'nosniff')
-                self.end_headers()
-                self.wfile.write(data)
-            do_GET = do_POST = do_PUT = do_DELETE = do_PATCH = handle_request
-        server = ThreadingHTTPServer((self.host, self.port), Handler)
-        server.daemon_threads = True
-        return server
+        from .http import Server
+        self._server = Server(self)
+        return self._server

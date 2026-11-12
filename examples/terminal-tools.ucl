@@ -1,0 +1,12 @@
+[
+  type is terminal
+  debugging is on
+  ask for text "What is your name? " into name
+  say "Hello, " + trim(name)
+  let total be 0
+  for each value in range(1, 6) [ set total to total + value ]
+  say "The sum from 1 to 5 is " + text(total)
+  try [ assert total == 15 ]
+  catch problem [ log error problem ]
+  log info "Terminal program complete"
+]

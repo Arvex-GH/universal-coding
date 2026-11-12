@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "universal-coding-language"
-version = "0.2.0"
+version = "0.3.0"
 description = "UCL: bracket-based plain-English applications"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
-dependencies = []
+dependencies = ["waitress==3.0.2"]
 
 [project.scripts]
 ucl = "ucl.__main__:main"

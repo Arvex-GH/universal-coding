@@ -59,7 +59,7 @@ If you downloaded/cloned the repository and are in its root, the exact command i
 ucl run examples/multiply.ucl
 ```
 
-The Start Menu includes a **UCL command prompt** and an examples-folder shortcut. Optional Explorer integration adds **Run with UCL** for `.ucl` files while keeping your existing default editor. On Windows 11 the action may be under **Show more options**. It also registers Notepad under Open With without taking over file associations. Run files you trust; Explorer execution is not a sandbox.
+The Start Menu includes a **UCL command prompt**, an examples-folder shortcut and a documentation link. The installer also includes the command reference under its docs folder; use `ucl help TOPIC` for offline help. Optional Explorer integration adds **Run with UCL** for `.ucl` files while keeping your existing default editor. On Windows 11 the action may be under **Show more options**. It also registers Notepad under Open With without taking over file associations. Run files you trust; Explorer execution is not a sandbox.
 
 ## Text editors
 
@@ -101,7 +101,7 @@ Save the file and press **Ctrl+Shift+B** to run it. Enter answers in the integra
 
 ## Compilation versus standalone packaging
 
-`ucl.exe` is the standalone UCL toolchain. It bundles the existing interpreter, Python runtime libraries, Tk and SQLite so **end users do not install or invoke Python**. It is not a newly self-hosted compiler, and `ucl run` interprets UCL source. A directory of runtime libraries alongside an executable is normal; do not delete `_internal`.
+`ucl.exe` is the standalone UCL toolchain. It bundles the existing interpreter, Python runtime libraries, Waitress, Tk and SQLite so **end users do not install or invoke Python**. It is not a newly self-hosted compiler, and `ucl run` interprets UCL source. A directory of runtime libraries alongside an executable is normal; do not delete `_internal`.
 
 `ucl build file.ucl -o program.exe` is a separate feature: the supported terminal subset is compiled through C99 into machine code and currently requires a compatible GCC/Clang toolchain on PATH. The installer does **not** install that C compiler. Unsupported language features fail explicitly; use `ucl run` for the complete implemented runtime. The interactive multiplication example currently runs with `ucl run`, not the restricted native backend.
 
@@ -115,7 +115,7 @@ To build manually on Windows with Python 3.12 and Inno Setup 6:
 python -m pip install -e . -r packaging/requirements.txt
 python packaging/build.py
 python packaging/smoke.py dist/ucl/ucl.exe
-& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DAppVersion=0.2.0 packaging/windows/ucl-installer.iss
+& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DAppVersion=0.3.0 packaging/windows/ucl-installer.iss
 ```
 
 Generated distributions and installer binaries stay out of Git; GitHub Release assets are the distribution channel. Code signing, ARM64-native builds and a production-strength auto-updater remain future work.

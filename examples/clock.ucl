@@ -1,0 +1,12 @@
+[
+  type is gui
+  title is "GUI Timer"
+  let seconds be 0
+  show label "0 seconds" is #clock
+  style #clock is {"font_size": 32, "font_weight": "bold"}
+  every 1000 milliseconds [
+    set seconds to seconds + 1
+    label #clock text is text(seconds) + " seconds"
+    log debug "Timer tick"
+  ]
+]

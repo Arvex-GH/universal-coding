@@ -1,0 +1,20 @@
+[
+  type is browser
+  title is "Styled UCL Web Counter"
+  window style is {"background": "white", "color": "navy", "font_size": 16, "padding": 12}
+  http settings is {"allowed_hosts": list("localhost", "127.0.0.1"), "rate_limit": 240}
+  let clicks be 0
+  show label "0" is #counter
+  style #counter is {"font_size": 48, "font_weight": "bold"}
+  show input "Your name" is #name
+  show label "Welcome!" is #greeting
+  show button "Click me!" is #click
+  style #click is {"background": "navy", "color": "white", "padding": 15}
+  when button #click is clicked [
+    read input #name into name
+    set clicks to clicks + 1
+    label #counter text is text(clicks)
+    label #greeting text is "Hello, " + name
+    say "Browser counter: " + text(clicks)
+  ]
+]

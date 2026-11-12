@@ -2,150 +2,126 @@
 
 Plain-English statements. Bracket-based objects. Explicit application capabilities.
 
-UCL is an executable language implementation, not a natural-language AI wrapper. It has a scanner, block parser, capability validator, safe expression interpreter, native desktop renderer, explicit browser renderer, HTTP/SQLite runtime, and a C99 native compiler backend for a terminal subset. It deliberately uses a defined vocabulary rather than guessing what arbitrary English means.
+**UCL 0.3** adds live labels, inputs/checkboxes, styling for desktop and web, GUI timers, terminal/file I/O, logging/tracing, richer flow control, SQLite transactions, and a hardened Waitress-based HTTP runtime.
 
-**`type is gui` means a native desktop window. `type is browser` means HTML in a browser. There is no automatic fallback between them.** Mobile is out of scope.
+## 📖 Documentation
 
-## Install and run
+### [Open the UCL documentation section →](docs/README.md)
 
-### Windows — no Python installation needed
+- **[Every command and builtin](docs/reference/commands.md)** — syntax and behavior, generated from the toolchain's reference registry
+- [GUI/browser widgets and styling](docs/ui.md)
+- [Terminal I/O and debugging](docs/debugging.md)
+- [HTTP settings and production deployment](docs/http.md)
+- [CLI commands/options](docs/reference/cli.md)
+- [Language model](docs/language.md) · [Upgrade from 0.2](docs/migration-0.3.md)
 
-Download **[ucl-installer.exe from the latest release](https://github.com/Arvex-GH/universal-coding/releases/latest/download/ucl-installer.exe)**, install it, and reopen your terminal/editor:
+Offline: `ucl help label_update`, `ucl help transaction`, `ucl words --details`.
+
+## Install on Windows — no Python installation needed
+
+Download **[ucl-installer.exe](https://github.com/Arvex-GH/universal-coding/releases/latest/download/ucl-installer.exe)** from the [latest release](https://github.com/Arvex-GH/universal-coding/releases/latest), install, and reopen your terminal/editor:
 
 ```powershell
 ucl --version
-ucl run examples/multiply.ucl
+ucl run examples/counter.ucl --debug
 ```
 
-The example path assumes you are in this repository. The installer also includes examples under `%LOCALAPPDATA%\Programs\UCL\examples`. Run a newer installer to update the same installation. The installer is currently unsigned. See [Windows installation, updates and editor support](docs/windows.md) for details, portable downloads and the VS Code extension.
+The example path assumes you are in this repository. Installed copies are also under `%LOCALAPPDATA%\Programs\UCL\examples`; copy them into your own project before editing. Run a newer installer to update the same installation without duplicate PATH entries. The installer is currently **unsigned**; Windows SmartScreen may warn.
 
-The standalone executable bundles the existing UCL runtime; end users do not install or invoke Python. This is distinct from compiling every UCL feature into native code.
+Install the release's `ucl-language.vsix` using VS Code's **Extensions: Install from VSIX…** for highlighting, snippets and Run/Check commands. See [Windows setup and editor integration](docs/windows.md).
 
-### From source (developers / other platforms)
+The standalone tool bundles the existing UCL interpreter/runtime, Waitress, Tk and SQLite. Users do not install/invoke Python. That is separate from compiling every UCL feature into native code.
 
-Python 3.10+ is required for source execution. The interpreter has no third-party Python dependencies.
-
-```sh
-python -m pip install -e .
-ucl run examples/terminal.ucl
-ucl run examples/desktop.ucl
-```
-
-Without installing, use `python -m ucl` in place of `ucl` from this repository.
-
-Desktop applications require Tk and a graphical desktop session. On Debian/Ubuntu install `python3-tk`; on other systems use a Python distribution with Tk support. A headless server cannot display a desktop window. UCL reports this rather than opening a browser instead.
+## A real GUI counter, with terminal output too
 
 ```ucl
 [
-  type is gui,
-  title is "My application",
+  type is gui
+  type is terminal
+  title is "Click Counter"
+  window size is 420 x 320
+  window style is {"background": "white", "font_size": 14}
+  let clicks be 0
 
-  button #1 looks black + padding is 15,
-  when button #1 is clicked [
-    button #1 text is "Hello!"
+  show label "0" is #counter
+  style #counter is {"font_size": 48, "font_weight": "bold", "color": "navy"}
+  show button "Click me!" is #click
+  style #click is {"background": "blue", "color": "white", "padding": 15}
+
+  when button #click is clicked [
+    set clicks to clicks + 1
+    label #counter text is text(clicks)
+    say "Clicks: " + text(clicks)
+    log debug "Updated the GUI"
   ]
-
-  show button 3x 1. "Click Me!" is #1; 2. "Hello!" is #2; 3. "ByeBye!" is #3
 ]
 ```
 
-Style and event declarations can precede the buttons they reference. Commas or newlines separate statements; square brackets **always** denote blocks. `//` introduces a comment outside a quoted string.
+`type is gui` means a **native desktop window**. `type is browser` explicitly chooses HTML. There is no automatic fallback. The counter above is a real, dynamically updated label, not a second button. `say` writes stdout; `log` writes stderr; both can accompany GUI changes.
 
 ## What works
 
 | Area | Implemented |
 | --- | --- |
-| Language | Located block AST, capability checks, variables, arithmetic, comparisons, short-circuit logic, conditionals, counted loops |
-| Declarations | Forward references between root values/objects; functions, buttons, styles, handlers and routes registered before execution; cyclic declarations rejected |
-| Objects | Properties, methods using `self`, independent instances cloned from templates, explicit property updates |
-| Functions | Parameters, local environments, recursion, return values |
-| Terminal | Output, interactive numeric input, command-line execution, native builds for the documented numeric subset |
-| Desktop (`gui`) | Native Tk window, title, labels, buttons, colors, padding, click handlers, text updates |
-| Browser (`browser`) | HTML renderer, form-based click dispatch, text updates, escaped content |
-| HTTP (`server`) | Exact-path GET/POST/PUT/DELETE/PATCH routes, request body/query/headers, JSON responses, status codes |
-| Database | SQLite connections, parameterized statements, transactions per statement, query results as objects |
-| Tooling | `run`, `check`, `ast`, `words`, `emit-c`, `build`; tests and CI |
+| Language | Located block AST, capability/context checks, values, arithmetic/comparisons, short-circuit logic, conditions, counted/while/collection loops, break/continue, assertions, try/catch |
+| Objects/functions | Dependency-resolved root values/objects, forward functions/handlers, properties, self methods, cloned instances, parameters, recursion, returns |
+| UI | Native desktop or explicit browser renderer; ordered labels/buttons/inputs/checkboxes, live values/text, enabled/visible state, shared validated styles, vertical/horizontal layouts, native timers |
+| Terminal/files | Numeric/text/password input, stdout, string/math/collection helpers, CLI/environment configuration, UTF-8 reads/writes/appends |
+| Diagnostics | Debug/info/warning/error levels, terminal stderr, optional JSON/file logs, action kind/location tracing, cooperative step quotas |
+| HTTP | Waitress transport, named route parameters, JSON/text/HTML responses, headers, request validation, HEAD/OPTIONS, host/CORS policies, bearer authentication, signed browser CSRF, limits/rate controls, request IDs |
+| Database | SQLite bound SQL, result records, statement autocommit and explicit transactional blocks |
+| Distribution/tooling | Windows installer/upgrades, portable ZIP, VS Code extension, offline/reference help, AST/check tools, CI, restricted native C backend |
 
-## Objects and functions
-
-```ucl
-[
-  say second.increment(5)
-  say counter.value
-  create second from counter
-
-  object counter [
-    let value be 0
-    to increment(amount) [
-      set self.value to self.value + amount
-      return self.value
-    ]
-  ]
-]
-```
-
-This prints `5` and `0`: the second object has independent state. See `examples/functions.ucl` for ordinary functions.
-
-## Run a database-backed HTTP server
+## Examples
 
 ```sh
-ucl run examples/server.ucl
-curl http://127.0.0.1:8080/
-curl -X POST http://127.0.0.1:8080/notes \
-  -H 'Content-Type: application/json' -d '{"text":"Hello, UCL"}'
-curl http://127.0.0.1:8080/notes
+ucl run examples/counter.ucl --debug
+ucl run examples/form.ucl
+ucl run examples/clock.ucl
+ucl run examples/terminal-tools.ucl --trace
+ucl serve examples/browser-counter.ucl
 ```
 
-`examples/server.ucl` creates a persistent SQLite database and implements create/list endpoints with bound SQL parameters. Use `":memory:"` for an ephemeral database.
+[Browse all examples](examples). A browser counter may share UI syntax with desktop, but still declares `type is browser` explicitly. GUI source execution needs Tk and a graphical session; a headless machine cannot display a native window.
 
-The default bind address is loopback. For a hosted development preview use:
+### API with database and security controls
+
+[examples/secure-api.ucl](examples/secure-api.ucl) shows named parameters, JSON validation, bearer authentication, transaction blocks and response headers. Set `UCL_API_TOKEN` to a long random secret in your environment before starting:
 
 ```sh
-ucl run examples/server.ucl --host 0.0.0.0 --port 8080
+ucl serve examples/secure-api.ucl
 ```
 
-Expose only trusted applications. The included HTTP server is **not a hardened production deployment server**. It has no authentication, TLS, request deadlines, rate limits, or multi-process database management. Put it behind appropriate infrastructure before exposure; see the limitations below.
+The default interface/Host policy is loopback. For public deployment, configure exact hosts, authentication and TLS infrastructure as described in **[the HTTP deployment guide](docs/http.md)**. For a hosted preview explicitly allow its hostname, for example `--host 0.0.0.0 --allowed-host '*.e2b.app'`.
 
-## Explicit browser rendering
+The development HTTP server has been replaced by a production-capable WSGI transport, but **this is not a blanket production-readiness guarantee**. Application authorization, TLS, input schemas, safe file paths, resource limits, backups, supervision, monitoring, security review and load testing remain essential. UCL handlers currently serialize shared state, and browser UI state is application-wide rather than per-user isolated.
+
+## Source install and tests
+
+Python 3.10+ for source execution:
 
 ```sh
-ucl run examples/browser.ucl
-# Visit http://127.0.0.1:8080
+python -m pip install -e .
+python -m unittest discover -s tests -v
+node --test editors/vscode/test/extension.test.js
+python tools/generate_reference.py
 ```
 
-This example explicitly declares `type is browser`. Desktop examples never start an HTTP renderer. Browser button handlers use same-origin POST forms and redirect back to the page; this is not a JavaScript SPA.
+Use `python -m ucl` instead of `ucl` when working directly from the checkout. The sole runtime package dependency is the pinned Waitress transport. Tk availability depends on your Python/OS distribution (for example python3-tk on Debian/Ubuntu); the Windows standalone build bundles it.
 
-## Native executables
-
-Install Clang/GCC (or another `cc` supporting C99):
+## Native compilation boundary
 
 ```sh
 ucl build examples/terminal.ucl -o native-program
-./native-program
 ucl emit-c examples/terminal.ucl -o program.c
 ```
 
-The path is **UCL → AST → checked C99 → system compiler → native executable**. Resulting terminal executables do not need Python. This is native compilation through C, not a claim that the whole language already has a direct LLVM backend.
+The restricted numeric terminal subset lowers **UCL → AST → C99 → system compiler → machine code**. It requires an installed GCC/Clang-compatible C compiler; its output does not require Python. Native numbers use C doubles, unlike arbitrary-precision interpreter integers. New dynamic/UI/HTTP/file features are not automatically supported by this backend and fail explicitly. Interactive multiplication currently uses `ucl run`, not `ucl build`.
 
-The native subset currently supports root numeric variables, mutation, numeric arithmetic/comparisons, string-literal/numeric output, `if`/`otherwise`, and counted loops. Unsupported features fail explicitly; GUI, browser, HTTP, SQL, objects, functions, lists and dynamic strings currently use the interpreter. Native numbers are C doubles; interpreter integers are arbitrary precision. Do not expect identical overflow, boolean formatting, or precision semantics outside the numeric subset's practical range.
+## Boundaries
 
-## Developer tools
+UCL is a defined language, not an AI wrapper that guesses arbitrary English. It is not feature parity with five mature ecosystems. Influences remain Python (readability), JavaScript (events/web), Java (objects), C (native lowering) and SQL (data access).
 
-```sh
-ucl check examples/desktop.ucl
-ucl ast examples/desktop.ucl
-ucl words
-python -m unittest discover -s tests -v
-```
+Programs are **trusted executable source**, not sandboxed documents: they can read/write files, access environment values, open databases, listen on ports, allocate memory and consume CPU. Cooperative quotas do not preempt blocking/library calls. No modules/package ecosystem, static type system, inheritance, general async/background tasks, full IDE debugger, advanced UI containers, per-user browser sessions, full native compilation or mobile target is claimed.
 
-`check` parses the full file and expression syntax, checks capabilities and block placement; it does not execute code, open databases, resolve dynamic values, or prove runtime correctness. `words` emits the actual statement patterns as JSON for future IDE tooling. This is not an implemented IDE or language server.
-
-## Scope and honest boundaries
-
-This is version 0.2 of a new language, not feature parity with five mature ecosystems. Influences are Python (readability), JavaScript (event-driven web), Java (objects/methods), C (native compilation), and SQL (data access).
-
-Current limits include: no imports/packages, inheritance, interfaces, static type system, exception-handling syntax, async tasks, arbitrary filesystem/process APIs, native GUI compilation, advanced layouts/widgets, dynamic route parameters, WebSockets, browser JavaScript generation, or IDE. Objects support properties and methods, not arbitrary nested executable declarations. Application renderers are mutually exclusive. SQLite is the only database backend. Initializers should be pure because dependency resolution may retry them. Global declarations are order-independent, but **actions still execute in source order**; database schema setup must precede queries. HTTP handlers get request-local scalar variables; object references and database connections are shared and requests are serialized.
-
-The expression interpreter never invokes Python `eval` or `exec` and does not expose Python attributes or imports. Nevertheless, UCL programs can access declared database files, consume CPU/memory, and bind network ports. **It is not a sandbox for hostile programs.**
-
-See [the language reference](docs/language.md), [compiler architecture and research](docs/architecture.md), and [development roadmap](docs/roadmap.md).
+See [architecture](docs/architecture.md) and the [remaining-work roadmap](docs/roadmap.md).
