@@ -69,6 +69,21 @@ class UITests(unittest.TestCase):
         self.assertTrue(r.ui.get('save')['visible'])
         self.assertTrue(r.ui.get('save')['enabled'])
 
+    def test_legacy_style_overrides_defaults_and_generic_style_wins(self):
+        r, _, _ = ready('[type is gui\nwindow style is {"background": "white", "padding": 20}\nshow button "Go" is #go\nbutton #go looks blue + padding is 5]')
+        self.assertEqual(r.ui.effective_style(r.buttons['go'])['background'], 'blue')
+        self.assertEqual(r.ui.effective_style(r.buttons['go'])['padding'], 5)
+        r.execute(parse('[style #go is {"background": "red"}]'))
+        self.assertEqual(r.ui.effective_style(r.buttons['go'])['background'], 'red')
+
+    def test_close_window_stops_rescheduling(self):
+        r, _, _ = ready('[type is gui\nevery 1000 milliseconds [close window]]')
+        window = mock.Mock()
+        r.populate_desktop(mock.MagicMock(), window)
+        window.after.call_args.args[1]()
+        window.destroy.assert_called_once()
+        self.assertEqual(window.after.call_count, 1)
+
     def test_bad_styles(self):
         for record in ('{"font_size": 0}', '{"font_size": true}', '{"background": "url(evil)"}', '{"position": "fixed"}', '{"padding": -1}'):
             with self.subTest(record=record), self.assertRaises(UCLError):

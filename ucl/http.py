@@ -276,7 +276,12 @@ class Server:
         self.closed = False
 
     def serve_forever(self):
-        try: self.server.run()
+        try:
+            # Use the transport loop directly: BaseWSGIServer.run swallows Ctrl+C,
+            # whereas UCL promises cancellation status 130 after its own cleanup.
+            self.server.asyncore.loop(timeout=self.server.adj.asyncore_loop_timeout,
+                                      map=self.server._map,
+                                      use_poll=self.server.adj.asyncore_use_poll)
         except OSError as error:
             # shutdown() may close a descriptor while the select loop is waking.
             if not self.closed or error.errno not in {9, 10038}: raise

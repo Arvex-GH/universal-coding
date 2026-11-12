@@ -86,7 +86,7 @@ class UI:
         return style
 
     def sync(self, ident):
-        if ident not in self.widgets: return
+        if self.closed or ident not in self.widgets: return
         spec = self.get(ident)
         style = self.effective_style(spec)
         options = {'font': ('TkDefaultFont', style.get('font_size', 12), style.get('font_weight', 'normal'))}
@@ -102,6 +102,7 @@ class UI:
             self.captions[ident].configure(**{k: v for k,v in options.items() if k in {'font', 'fg', 'bg'}})
 
     def repack(self):
+        if self.closed: return
         for widget in list(self.widgets.values()) + list(self.captions.values()): widget.pack_forget()
         for ident, spec in self.elements.items():
             if spec['visible']:
@@ -112,6 +113,7 @@ class UI:
                                          padx=style.get('margin', 8), pady=style.get('margin', 8))
 
     def close(self):
+        if self.closed: return
         if self.window is None: raise UCLError('close window requires an open native window; use it in a handler/timer')
         self.closed = True
         self.window.destroy()
