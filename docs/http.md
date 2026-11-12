@@ -35,7 +35,7 @@ Request properties:
 | `request.query` | Record of lists from query string (at most 1000 fields) |
 | `request.headers` | Lowercase, hyphenated HTTP header record |
 | `request.body` | UTF-8 body text |
-| `request.json` | Parsed JSON for application/json, otherwise nothing; invalid JSON/nonfinite constants get 400 |
+| `request.json` | Parsed JSON for application/json, otherwise nothing; invalid JSON, duplicate keys, nonfinite numbers and integers over 256 digits get 400 |
 | `request.id` | Runtime-generated correlation ID, not caller-supplied |
 | `request.client` | Remote client IP after explicitly configured proxy processing |
 | `request.scheme` | http/https after explicitly configured proxy processing |

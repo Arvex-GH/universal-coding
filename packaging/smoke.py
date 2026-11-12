@@ -65,6 +65,7 @@ def smoke(executable):
         lines = queue.Queue()
         def read_startup(): lines.put(process.stdout.readline())
         threading.Thread(target=read_startup, daemon=True).start()
+        success = False
         try:
             line = lines.get(timeout=20)
             assert 'UCL listening on ' in line, line
@@ -77,12 +78,14 @@ def smoke(executable):
             request.add_header('Authorization', 'Bearer ' + env['UCL_SMOKE_TOKEN'])
             with urllib.request.urlopen(request, timeout=5) as response:
                 assert json.load(response) == {'id': '42', 'body': {'hello': 'UCL'}}
+            success = True
         finally:
             process.terminate()
             try: stdout, stderr = process.communicate(timeout=10)
             except subprocess.TimeoutExpired:
                 process.kill()
                 stdout, stderr = process.communicate()
+            if not success: print(stdout + stderr, file=sys.stderr)
             if process.returncode not in {0, -15, 1} and os.name != 'nt':
                 raise AssertionError(stdout + stderr)
     print('Standalone CLI/help/input/SQLite/HTTP/auth passed; native Tk widgets/updates also tested on Windows.')

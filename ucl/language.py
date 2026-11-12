@@ -165,7 +165,7 @@ PATTERNS = {
 
 def classify(node):
     for name, pattern in PATTERNS.items():
-        m = re.fullmatch(pattern, node.text, re.I)
+        m = re.fullmatch(pattern, node.text, re.I | re.S)
         if m: return name, m.groups()
     raise UCLError(f'line {node.line}: unknown statement: {node.text}')
 
@@ -204,7 +204,8 @@ def validate(nodes):
             if kind in UI_KINDS and not types & {'gui', 'browser'}:
                 raise UCLError(f'line {n.line}: add type is gui (desktop) or type is browser')
             if kind in {'timer', 'close_window'} and 'gui' not in types:
-                raise UCLError(f'line {n.line}: timers require type is gui; close window also requires gui')
+                message = 'timers require type is gui' if kind == 'timer' else 'close window requires type is gui'
+                raise UCLError(f'line {n.line}: {message}')
             if kind in {'ask_number', 'ask_text'} and types & {'gui', 'browser', 'server'}:
                 raise UCLError(f'line {n.line}: terminal input requires a non-GUI, non-HTTP application')
             if kind == 'route' and 'server' not in types:

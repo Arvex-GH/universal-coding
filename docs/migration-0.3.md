@@ -13,7 +13,8 @@ Most existing programs continue to work. Important intentional changes:
 7. **Browser CSRF:** raw button POSTs without a valid page cookie/form token are rejected. Fetch/render the page and submit its token; do not construct unauthenticated control POSTs.
 8. **HTTP methods:** known paths with a wrong method return 405 instead of 404. HEAD falls back to GET; OPTIONS is handled automatically.
 9. **HTTP limits:** request bodies, headers, response sizes, per-client rate and execution steps have finite defaults. Configure them to suit measured workloads.
-10. **Access logs:** HTTP request summaries now go to stderr by default; disable with `"access_log": false` if your reverse proxy already handles that need.
-11. **Headers:** `request.headers` uses lowercase, hyphenated header names. Avoid relying on source casing from older runtimes.
+10. **Strict JSON:** duplicate object keys, nonfinite/overflowing floats and integers over 256 digits are rejected by parse_json and HTTP JSON parsing.
+11. **Access logs:** HTTP request summaries now go to stderr by default; disable with `"access_log": false` if your reverse proxy already handles that need.
+12. **Headers:** `request.headers` uses lowercase, hyphenated header names. Avoid relying on source casing from older runtimes.
 
 `type is gui` remains native desktop; `type is browser` remains an explicit choice. `say` still writes stdout in all modes. Application renderer combinations remain mutually exclusive; terminal output can be combined with any renderer, but simultaneous native GUI + HTTP hosting is not implemented.

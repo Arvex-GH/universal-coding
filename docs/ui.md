@@ -76,7 +76,7 @@ Widgets render in declaration order. Desktop and browser use the same ordered mo
 ]
 ```
 
-Timers run on the GUI thread; keep callbacks short. The interval is 10–86400000 ms and schedules again **after** callback completion (not a real-time clock). A failing callback logs to the terminal and stops that timer. Closing the window ends its event loop. These timers are not background workers, and are not available in browser/server mode.
+Timers run on the GUI thread; keep callbacks short. The interval is 10–86400000 ms and schedules again **after** callback completion (not a real-time clock). A failing callback logs to the terminal and stops that timer. Closing the window (or executing `close window` in a handler/timer) ends its event loop. These timers are not background workers, and are not available in browser/server mode.
 
 ## Browser behavior and security
 

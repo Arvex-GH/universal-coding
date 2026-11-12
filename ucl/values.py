@@ -9,10 +9,13 @@ def parse_json(text):
         result = float(value)
         if not math.isfinite(result): raise ValueError('JSON number is outside the finite numeric range')
         return result
+    def integer(value):
+        if len(value.lstrip('-')) > 256: raise ValueError('JSON integers are limited to 256 digits')
+        return int(value)
     def record(pairs):
         result = {}
         for key, value in pairs:
             if key in result: raise ValueError('duplicate JSON object key')
             result[key] = value
         return result
-    return json.loads(text, parse_constant=constant, parse_float=floating, object_pairs_hook=record)
+    return json.loads(text, parse_constant=constant, parse_float=floating, parse_int=integer, object_pairs_hook=record)

@@ -122,6 +122,16 @@ class UITests(unittest.TestCase):
 
 
 class LanguageUpdateTests(unittest.TestCase):
+    def test_multiline_records_and_calls(self):
+        r, out, _ = ready('[type is browser\nhttp settings is {\n"threads": 2,\n"allowed_hosts": list("localhost")\n}\nshow label "0" is #count\nstyle #count is {\n"font_size": 48\n}\nsay join(\nlist("a", "b"), ","\n)]')
+        self.assertEqual(r.http_settings['threads'], 2)
+        self.assertEqual(r.ui.get('count')['style']['font_size'], 48)
+        self.assertEqual(out, ['a,b'])
+
+    def test_strict_json_large_integer_limit(self):
+        from ucl.values import parse_json
+        with self.assertRaisesRegex(ValueError, '256 digits'): parse_json('9' * 257)
+
     def test_text_input_and_builtins(self):
         _, out, _ = ready('[ask for text "Name: " into name\nsay upper(trim(name))]', input_fn=lambda prompt: ' Ada ')
         self.assertEqual(out, ['ADA'])

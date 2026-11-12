@@ -34,7 +34,7 @@ ucl run examples/terminal-tools.ucl --step-limit 10000
 
 `--trace` reports source filename, line and **statement kind**, not evaluated values or secrets. It traces executed actions/callbacks, not every initializer inside declaration preparation. It is an execution trace, not an interactive breakpoint debugger.
 
-JSON diagnostics contain UTC time, level, message and (for HTTP) request_id. Text entries escape newline/carriage-return characters to prevent multiline log spoofing. `--log-file` duplicates diagnostics to a UTF-8 append-only file; stdout remains separate. If the log file cannot be written, UCL reports that on the terminal and continues with terminal logging. Manage permissions, retention and rotation externally.
+JSON diagnostics contain UTC time, level, message and (for HTTP) request_id. Text entries escape control characters to prevent multiline log spoofing. `--log-file` duplicates diagnostics to a UTF-8 append-only file; stdout remains separate. If the log file cannot be written, UCL reports that on the terminal and continues with terminal logging. Manage permissions, retention and rotation externally.
 
 HTTP access records include method, status, duration and generated request ID, but not bodies, Authorization headers or query strings. Explicit user log statements can still expose sensitive data: **never log secrets**. GUI handler errors are both logged and shown in a native error dialog. Timer errors log and stop their timer.
 
