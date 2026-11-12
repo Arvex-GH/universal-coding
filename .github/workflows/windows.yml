@@ -25,6 +25,8 @@ jobs:
           npm install --global @vscode/vsce@3.6.2
       - name: Test language
         run: python packaging/ci.py python -m unittest discover -s tests -v
+      - name: Test editor commands
+        run: node --test editors/vscode/test/extension.test.js
       - name: Freeze standalone UCL (includes Tk and SQLite)
         run: python packaging/ci.py python packaging/build.py
       - name: Smoke test standalone CLI

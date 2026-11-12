@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import winreg
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -72,8 +73,18 @@ def main():
         finally:
             uninstaller = app / 'unins000.exe'
             if uninstaller.exists():
-                result = subprocess.run([str(uninstaller), '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'], timeout=120)
+                log = Path(tmp) / 'uninstall.log'
+                result = subprocess.run([str(uninstaller), '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', f'/LOG={log}'], timeout=120)
                 assert result.returncode == 0
+                # Inno's original uninstaller can exit after launching its temporary
+                # copy. Wait for that copy to complete before testing cleanup.
+                deadline = time.monotonic() + 45
+                while time.monotonic() < deadline:
+                    if token not in entries(registry_path()) and not (app / 'ucl.exe').exists():
+                        break
+                    time.sleep(0.2)
+                if token in entries(registry_path()):
+                    print(log.read_text(encoding='utf-8', errors='replace') if log.exists() else 'No uninstall log')
         assert token not in entries(registry_path())
         assert before == entries(registry_path()), 'Uninstaller modified unrelated PATH entries'
         assert not (app / 'ucl.exe').exists()

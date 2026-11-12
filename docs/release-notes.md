@@ -6,7 +6,7 @@ First standalone Windows distribution of Universal Coding Language.
 
 - **ucl-installer.exe** — per-user Windows x64 installer. Adds UCL to PATH, registers optional Explorer file actions, and updates the existing installation when rerun with a newer release. No separate Python installation is needed for `ucl run`.
 - **ucl-windows-x64.zip** — portable UCL executable and required bundled libraries. Extract the whole directory.
-- **ucl-language.vsix** — VS Code syntax highlighting, snippets and `.ucl` recognition; install using Extensions: Install from VSIX.
+- **ucl-language.vsix** — VS Code syntax highlighting, snippets, Run/Check commands and `.ucl` recognition; install using Extensions: Install from VSIX.
 - **SHA256SUMS.txt** — SHA-256 checksums.
 
 After installation, reopen your terminal and run `ucl --version`. Save a `.ucl` file and run `ucl run your-file.ucl`. The bundled multiplication example prompts for two numbers and prints their product.

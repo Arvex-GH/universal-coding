@@ -67,7 +67,7 @@ Any text editor can save `.ucl` files; UCL runs the saved file, not the editor's
 
 ### Visual Studio Code
 
-Install `ucl-language.vsix` using **Extensions: Install from VSIX…** (or `code --install-extension ucl-language.vsix`). Restart VS Code after installing UCL. The extension provides syntax highlighting, bracket handling and snippets, not an AI autocomplete engine or full language server.
+Install `ucl-language.vsix` using **Extensions: Install from VSIX…** (or `code --install-extension ucl-language.vsix`). Restart VS Code after installing UCL. The extension provides syntax highlighting, bracket handling, snippets and **UCL: Run Current File** / **UCL: Check Current File** commands. Click the Run triangle in a UCL editor to save and run the file in an interactive terminal. Execution requires a trusted workspace. It is not an AI autocomplete engine or full language server.
 
 For keyboard-driven run/check, save the following as `.vscode/tasks.json` in your project:
 

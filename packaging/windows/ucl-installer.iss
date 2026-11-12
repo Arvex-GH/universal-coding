@@ -110,6 +110,8 @@ begin
     AppDir := ExpandConstant('{app}');
     if (Owned <> '') and not SameEntry(Owned, AppDir) then begin
       Path := WithoutEntry(Path, Owned);
+      if not RegWriteExpandStringValue(HKCU, 'Environment', 'Path', Path) then
+        RaiseException('Could not update the previous UCL PATH entry.');
       RegDeleteValue(HKCU, OwnerKey, 'PathEntry');
     end;
     if not HasEntry(Path, AppDir) then begin
