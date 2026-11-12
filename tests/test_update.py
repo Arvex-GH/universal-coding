@@ -269,6 +269,15 @@ class WSGITests(unittest.TestCase):
         self.assertGreater(int(response['headers']['Content-Length']), 0)
         self.assertEqual(self.request(app, method='OPTIONS')['status'], 204)
 
+    def test_bodyless_status_framing(self):
+        for code in (204, 205, 304):
+            with self.subTest(code=code):
+                app, _ = self.app(f'when get "/" [status is {code}\nrespond "ignored"]')
+                result = self.request(app)
+                self.assertEqual(result['body'], b'')
+                if code in (204, 304): self.assertNotIn('Content-Length', result['headers'])
+                else: self.assertEqual(result['headers']['Content-Length'], '0')
+
     def test_host_filter(self):
         app, _ = self.app()
         for host in ('evil.example', 'localhost.evil', 'evil@localhost', '@localhost', 'localhost:bad', 'localhost/path'):

@@ -149,11 +149,12 @@ class HTTPApplication:
             data = (json.dumps(value, allow_nan=False) if kind == 'json' else str(value)).encode('utf-8')
             if len(data) > self.config['max_response_bytes']:
                 status, data, content_type = 500, b'{"error":"response too large"}', 'application/json; charset=utf-8'
-            if status in {204, 304}: data = b''
+            if status in {204, 205, 304}: data = b''
             values = {'Content-Type': content_type, 'Content-Length': str(len(data)),
                       'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY',
                       'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store', 'X-Request-ID': request_id,
                       'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"}
+            if status in {204, 304}: values.pop('Content-Length')
             for key, item in (headers or {}).items():
                 # Enforce safe header syntax even for application-generated mappings.
                 response_header(key, item)
@@ -235,6 +236,9 @@ class HTTPApplication:
                 if nodes is None and method == 'HEAD': nodes, params = self.match('GET', path)
                 if nodes is None:
                     allowed = [m for m in {'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD'} if self.match(m, path)[0] is not None]
+                    if allowed:
+                        if 'GET' in allowed and 'HEAD' not in allowed: allowed.append('HEAD')
+                        allowed.append('OPTIONS')
                     return finish(405 if allowed else 404, {'error': 'method not allowed' if allowed else 'not found'}, headers={'Allow': ', '.join(sorted(allowed))} if allowed else None)
                 try: query = parse_qs(environ.get('QUERY_STRING', ''), max_num_fields=1000)
                 except ValueError: return finish(400, {'error': 'too many query fields'})

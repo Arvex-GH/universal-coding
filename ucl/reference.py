@@ -52,7 +52,7 @@ COMMANDS = {
  'object': ('object counter [ let value be 0 ]', 'Declare a property/method object template. Properties dependency-resolve; templates are usable instances as well as clone sources.'),
  'route': ('when get "/users/{id}" [ respond request.params.id ]', 'Declare an HTTP route. Supports get/post/put/delete/patch, named path parameters, exact-path precedence, HEAD fallback and automatic OPTIONS. Duplicate/ambiguous shapes are rejected.'),
  'respond': ('respond {"ok": true}', 'End the route with JSON and the selected status/headers. Missing explicit response is JSON null. JSON cannot contain nonfinite numbers.'),
- 'status': ('status is 201', 'Set a route response status, 200–599. HEAD, 204 and 304 suppress response bodies as required.'),
+ 'status': ('status is 201', 'Set a route response status, 200–599. HEAD, 204, 205 and 304 suppress response bodies as required.'),
  'database': ('database app is "app.db"', 'Open a SQLite connection before actions. :memory: is ephemeral; relative paths resolve against the working directory. Connections close on shutdown.'),
  'execute': ('execute "INSERT INTO users VALUES (?)" on app using list("Ada")', 'Run one parameterized SQL statement. using is optional. Autocommits per statement unless inside a transaction block.'),
  'query': ('query "SELECT name FROM users" on app into users', 'Run SQL returning rows as a list of property records. Optional using binds parameters. Statements without row results are rejected.'),

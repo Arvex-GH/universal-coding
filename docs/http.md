@@ -42,7 +42,7 @@ Request properties:
 
 `respond EXPR` ends the handler with JSON. `respond text EXPR` and `respond html EXPR` select plain text or HTML. HTML is intentionally trusted markup: use `escape_html(untrusted)` when composing it. `status is N` selects 200–599. `require CONDITION else status N` rejects false conditions with generic JSON and 400–599. Validate payload **shape, types, sizes and business rules**, not only JSON syntax.
 
-`header "Name" is EXPR` sets printable ASCII headers; CR/LF and transport-managed headers (including Content-Length/Type) are rejected. Runtime security headers include nosniff, DENY framing, no-store caching, no-referrer and a restrictive CSP. Do not weaken them casually. HEAD, 204 and 304 suppress response bodies.
+`header "Name" is EXPR` sets printable ASCII headers; CR/LF and transport-managed headers (including Content-Length/Type) are rejected. Runtime security headers include nosniff, DENY framing, no-store caching, no-referrer and a restrictive CSP. Do not weaken them casually. HEAD, 204, 205 and 304 suppress response bodies; 204/304 omit Content-Length.
 
 Handler exceptions return generic 500 JSON with a correlation ID. Details are logged locally, never tracebacks in HTTP responses. Transport-level failures raised by Waitress itself (such as an oversized header/body) can use its own error format instead of UCL JSON. Access logs contain no request bodies, Authorization values or query strings.
 

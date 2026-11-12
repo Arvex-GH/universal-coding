@@ -461,7 +461,7 @@ End the route with JSON and the selected status/headers. Missing explicit respon
 status is 201
 ```
 
-Set a route response status, 200–599. HEAD, 204 and 304 suppress response bodies as required.
+Set a route response status, 200–599. HEAD, 204, 205 and 304 suppress response bodies as required.
 
 ## database
 
