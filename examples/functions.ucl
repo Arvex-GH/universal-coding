@@ -1,0 +1,9 @@
+[
+  say twice(21)
+  say settings.name
+  object settings [
+    let name be "UCL"
+    let version be 1
+  ]
+  to twice(value) [ return value * 2 ]
+]

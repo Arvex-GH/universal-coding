@@ -1,0 +1,8 @@
+[
+  type is terminal
+
+  ask for number "Enter the first number: " into first
+  ask for number "Enter the second number: " into second
+
+  say "The result is " + text(first * second)
+]

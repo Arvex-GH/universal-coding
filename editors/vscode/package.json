@@ -1,0 +1,74 @@
+{
+  "name": "ucl-language",
+  "displayName": "UCL \u2014 Universal Coding Language",
+  "description": "UCL highlighting, snippets, and Run/Check commands",
+  "version": "0.2.0",
+  "publisher": "ucl-language",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Arvex-GH/universal-coding"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "ucl",
+        "aliases": [
+          "UCL",
+          "ucl"
+        ],
+        "extensions": [
+          ".ucl"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "ucl",
+        "scopeName": "source.ucl",
+        "path": "./syntaxes/ucl.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "ucl",
+        "path": "./snippets/ucl.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "ucl.runFile",
+        "title": "UCL: Run Current File",
+        "icon": "$(play)"
+      },
+      {
+        "command": "ucl.checkFile",
+        "title": "UCL: Check Current File"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "ucl.runFile",
+          "when": "editorLangId == ucl && isWorkspaceTrusted",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "main": "./extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Syntax highlighting is available; running UCL requires workspace trust."
+    }
+  }
+}

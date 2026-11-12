@@ -1,0 +1,10 @@
+[
+  type is terminal
+  say "Hello from UCL!"
+  say answer
+  let answer be base * 2
+  let base be 21
+  repeat 3 times [ say "Everyone can code." ]
+  if answer == 42 [ say "It works!" ]
+  otherwise [ say "Try again." ]
+]
