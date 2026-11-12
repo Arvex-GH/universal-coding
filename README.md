@@ -2,7 +2,9 @@
 
 Plain-English statements. Bracket-based objects. Explicit application capabilities.
 
-**UCL 0.3** adds live labels, inputs/checkboxes, styling for desktop and web, GUI timers, terminal/file I/O, logging/tracing, richer flow control, SQLite transactions, and a hardened Waitress-based HTTP runtime.
+**UCL 0.4** adds a shared design system: nested native/web panels, grids, light/dark themes and tokens, interaction states, responsive styles, animations, compiled Tailwind CSS integration, interactive TUI, and context-aware VS Code assistance. Existing live widgets, SQLite and hardened Waitress HTTP remain available.
+
+See the **[design guide](docs/design.md)**, **[complete style matrix](docs/reference/styles.md)** and **[0.4 migration notes](docs/migration-0.4.md)**. Native GUI stays native; full CSS/Tailwind rendering belongs to the browser.
 
 ## 📖 Documentation
 

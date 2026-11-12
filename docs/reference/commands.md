@@ -13,12 +13,26 @@ Generated from `ucl/reference.py`; every parser statement is covered. Use `ucl h
 - [window_style](#window-style)
 - [window_size](#window-size)
 - [layout](#layout)
+- [panel](#panel)
+- [place](#place)
+- [panel_layout](#panel-layout)
+- [theme](#theme)
+- [design_tokens](#design-tokens)
+- [motion](#motion)
+- [assets](#assets)
+- [stylesheet](#stylesheet)
+- [classes](#classes)
+- [state_style](#state-style)
+- [responsive_style](#responsive-style)
+- [animate](#animate)
+- [close_interface](#close-interface)
 - [widget_style](#widget-style)
 - [label_named](#label-named)
 - [input](#input)
 - [checkbox](#checkbox)
 - [label_update](#label-update)
 - [input_update](#input-update)
+- [focus_input](#focus-input)
 - [read_input](#read-input)
 - [widget_state](#widget-state)
 - [close_window](#close-window)
@@ -66,10 +80,10 @@ Generated from `ucl/reference.py`; every parser statement is covered. Use `ucl h
 ## type
 
 ```ucl
-type is gui|browser|server|terminal|database
+type is gui|browser|server|terminal|database|tui
 ```
 
-Select capabilities. gui is native desktop; browser is HTML; server exposes routes. Only one of these three renderers is allowed; add terminal/database alongside it.
+Select capabilities. gui is native desktop; browser is HTML; server exposes routes. tui is an interactive terminal interface. Only one of these four renderers is allowed; add terminal/database alongside it.
 
 ## title
 
@@ -133,7 +147,111 @@ Set the native desktop window dimensions, each 100–4096 pixels. Browser viewpo
 layout is vertical
 ```
 
-Stack widgets vertically (default) or horizontally, preserving declaration order.
+Stack widgets vertically (default), horizontally, or use layout is grid 4 columns (1–12 columns). Grid supports column_span styling and preserves declaration order. Available since 0.4.0.
+
+## panel
+
+```ucl
+show panel "Account" is #account
+```
+
+Declare a named grouping container for GUI/browser widgets. Use place to assign children; panels may nest without cycles. Default layout is vertical.
+
+## place
+
+```ucl
+place #name inside #account
+```
+
+Assign a widget to a panel, independent of declaration order. Root declaration; only one parent per widget. GUI/browser only.
+
+## panel layout
+
+```ucl
+panel #account layout is grid 2 columns
+```
+
+Set a panel layout: vertical, horizontal, or grid 1–12 columns. Other panels keep their own layout.
+
+## theme
+
+```ucl
+theme is dark
+```
+
+Choose light or dark built-in palettes. Sets semantic tokens background/surface/text/muted/primary/danger/border and sensible widget defaults. Root declaration.
+
+## design tokens
+
+```ucl
+design tokens is {"primary": "#7c3aed", "spacing": 12}
+```
+
+Declare or override semantic tokens before styles resolve. Reference with "$primary" in style records. Values validate at use; theme/tokens work regardless of declaration order.
+
+## motion
+
+```ucl
+motion is off
+```
+
+Disable browser and native animations for this app. Browser additionally honors prefers-reduced-motion. Root declaration; on is default.
+
+## assets
+
+```ucl
+assets is "public"
+```
+
+Serve allowlisted local images/fonts at /__ucl/assets/NAME for browser CSS. Directory is relative to source; traversal, outside symlinks, executable formats, and oversized files are rejected. Authentication/host/rate policies still apply.
+
+## stylesheet
+
+```ucl
+stylesheet is "app.css"
+```
+
+Load trusted local compiled CSS for browser apps, relative to the UCL source file (8 MiB limit). Supports compiled Tailwind of any version. No CDN or Node runtime needed. See design guide.
+
+## classes
+
+```ucl
+classes #save is "rounded-xl bg-indigo-600 hover:bg-indigo-500"
+```
+
+Set browser utility classes. Build CSS with ucl design or your own Tailwind pipeline; runtime never fetches remote CSS. Record styles and utilities coexist; helper uses important utilities.
+
+## state style
+
+```ucl
+style #save when hover is {"background": "$primary"}
+```
+
+Style hover/focus/active/disabled states in GUI or browser. Native bindings update immediately; browser uses CSS pseudo-classes. No TUI hover states.
+
+## responsive style
+
+```ucl
+style #save at md is {"font_size": 20}
+```
+
+Browser-only min-width variant: sm 640, md 768, lg 1024, xl 1280, 2xl 1536 pixels. Named breakpoints have deterministic ascending cascade.
+
+## animate
+
+```ucl
+animate #save to {"background": "#2563eb"} over 300 milliseconds
+```
+
+Animate native numeric/#RRGGBB style values with cancellable Tk callbacks, or emit browser keyframes from current to target style. Duration 0–60000 ms. No TUI animations. Browser is server-rendered: animation plays on the next response, not live DOM updates.
+
+## close interface
+
+```ucl
+close interface
+```
+
+Close a native GUI or end a TUI input loop. Browser/server shutdown is not exposed to click handlers.
 
 ## widget style
 
@@ -141,7 +259,7 @@ Stack widgets vertically (default) or horizontally, preserving declaration order
 style #counter is {"font_size": 48, "font_weight": "bold"}
 ```
 
-Set or update validated styles for any widget. Properties: color, background, font_size, font_weight, padding, margin, width. Can appear before the root widget declaration.
+Set or update validated styles for any widget. Properties: color, background, font_size, font_weight, padding, margin, width, align, border_width, column_span. Can appear before the root widget declaration.
 
 ## label named
 
@@ -182,6 +300,14 @@ input #name value is "Ada"
 ```
 
 Set input text or a checkbox boolean. Updates the native widget and shared browser model.
+
+## focus input
+
+```ucl
+focus input #display selecting all
+```
+
+Focus a native text input, optionally selecting its contents for replacement. Omit selecting all to place the cursor at the end. Available since 0.4.0; requires gui.
 
 ## read input
 

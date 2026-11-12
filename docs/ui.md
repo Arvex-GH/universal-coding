@@ -46,19 +46,9 @@ Native inputs have a caption and a single-line entry. There are no native text a
 ]
 ```
 
-| Property | Values | Desktop/browser behavior |
-| --- | --- | --- |
-| `color` | Supported name or `#RRGGBB` | Foreground text color |
-| `background` | Supported name or `#RRGGBB` | Widget background; window/page background for window style |
-| `font_size` | Integer 1–512 | Font size in points |
-| `font_weight` | `"normal"`, `"bold"` | Font weight |
-| `padding` | Integer 0–512 | Inner padding for desktop labels/buttons and browser widgets; native input/checkbox spacing also uses margins |
-| `margin` | Integer 0–512 | Outer spacing in pixels |
-| `width` | Integer 0–512 | Approximate character width (Tk units / CSS ch), not pixel-perfect parity |
+See the **[complete design guide](design.md)** and **[exhaustive property matrix](reference/styles.md)** for 0.4 themes/tokens, nested panels, grid layouts, hover/focus/active/disabled states, responsive styles, animations, compiled Tailwind CSS, and TUI support.
 
-Supported portable colors: black, white, red, green, blue, yellow, orange, purple, pink, gray, grey, navy, teal, cyan, magenta, brown, silver, lime. Hex colors provide more choice. Arbitrary CSS, URLs and style property names are rejected rather than injected into HTML. Native platform rendering can still differ.
-
-`window style` sets inherited defaults. Per-widget styles override them. `style #id is {...}` can be declared before the widget or executed later in a handler. Old `button #id looks black + padding is 15` remains supported. `window size is WIDTH x HEIGHT` is desktop-only in effect (100–4096 pixels each); browsers control their own viewport. `layout is horizontal` is the alternative to vertical stacking; there is no nested grid/flex layout language yet.
+`window style` supplies inherited defaults; per-widget records override them. Records can appear before widgets or run in handlers. Legacy `button #id looks COLOR + padding is N` remains supported. `window size` controls native window dimensions (100–4096 pixels). `layout is grid 4 columns` creates a keypad-style layout; `panel #id layout is ...` controls a nested container.
 
 Widgets render in declaration order. Desktop and browser use the same ordered model. This changes 0.2's behavior of grouping labels before all buttons.
 

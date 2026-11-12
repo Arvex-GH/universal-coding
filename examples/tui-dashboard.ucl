@@ -1,0 +1,22 @@
+[
+  type is tui
+  title is "UCL Terminal Workspace"
+  theme is dark
+  layout is grid 2 columns
+  show label "A portable, interactive terminal interface" is #intro
+  style #intro is {"column_span": 2, "color": "$primary", "font_weight": "bold"}
+  show input "Project" is #name
+  style #name is {"column_span": 2}
+  input #name value is "Terminal project"
+  show checkbox "Notifications" is #notifications
+  show button "Save" is #save
+  show label "Ready" is #status
+  style #status is {"column_span": 2, "color": "$muted"}
+  show button "Close" is #close
+  when button #save is clicked [
+    read input #name into name
+    label #status text is "Saved: " + name
+    style #status is {"color": "#34d399"}
+  ]
+  when button #close is clicked [ close interface ]
+]

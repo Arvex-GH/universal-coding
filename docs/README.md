@@ -1,12 +1,15 @@
 # UCL Documentation
 
-Welcome to the **UCL 0.3 documentation section**. These pages are readable directly on GitHub; they are versioned with the language, not an unmaintained list of promises.
+Welcome to the **UCL 0.4 documentation section**. These pages are readable directly on GitHub; they are versioned with the language, not an unmaintained list of promises.
 
 ## Start here
 
 - [Install/update UCL on Windows and configure your editor](windows.md)
 - [Language structure, values and execution order](language.md)
 - [Complete command and builtin reference](reference/commands.md) — **every statement supported by the parser**, with syntax and behavior
+- [Design system: themes, panels, animations, Tailwind and TUI](design.md)
+- [Complete style property matrix](reference/styles.md)
+- [Upgrade from 0.3](migration-0.4.md)
 - [Desktop/browser widgets, live updates and styling](ui.md)
 - [Terminal I/O, logging, tracing and debugging](debugging.md)
 - [HTTP configuration and production deployment](http.md)

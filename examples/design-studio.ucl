@@ -1,0 +1,48 @@
+[
+  type is browser
+  title is "UCL Design Studio"
+  theme is dark
+  design tokens is {"primary": "#a78bfa"}
+  stylesheet is "design-studio.css"
+
+  show label "UCL / DESIGN STUDIO" is #brand
+  classes #brand is "text-violet-300 tracking-widest text-xs font-bold"
+  show label "Build interfaces. Not workarounds." is #headline
+  classes #headline is "text-3xl md:text-5xl font-bold tracking-tight py-6 animate-pulse motion-reduce:animate-none"
+  show label "Native language. Responsive web. Shared design tokens." is #intro
+  style #intro is {"color": "$muted", "font_size": 14}
+
+  show panel "Workspace" is #workspace
+  classes #workspace is "rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-xl gap-6"
+  panel #workspace layout is grid 2 columns
+  style #workspace is {"display": "block"}
+  style #workspace at md is {"display": "grid"}
+
+  show panel "Project" is #project
+  place #project inside #workspace
+  classes #project is "rounded-xl bg-slate-800 p-4 border-0"
+  show input "Project name" is #name
+  place #name inside #project
+  input #name value is "My next great idea"
+  show checkbox "Enable notifications" is #notifications
+  place #notifications inside #project
+  show button "Save project" is #save
+  place #save inside #project
+  classes #save is "rounded-lg bg-violet-600 hover:bg-violet-500 focus-visible:ring-4 focus-visible:ring-violet-300 text-white font-bold px-4 py-3 transition-colors duration-200"
+
+  show panel "Preview" is #preview
+  place #preview inside #workspace
+  classes #preview is "rounded-xl border border-slate-600 p-4"
+  show label "Ready to create" is #status
+  place #status inside #preview
+  style #status is {"color": "$primary", "font_size": 20, "animation": "slide", "duration_ms": 500}
+  show label "Resize the browser to switch between stacked and two-column layouts." is #tip
+  place #tip inside #preview
+  classes #tip is "text-sm text-slate-400 leading-relaxed"
+
+  when button #save is clicked [
+    read input #name into name
+    label #status text is "Saved: " + name
+    animate #status to {"color": "#34d399"} over 450 milliseconds
+  ]
+]

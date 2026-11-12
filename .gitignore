@@ -9,3 +9,5 @@ dist/
 /native-program
 
 *.vsix
+
+node_modules/

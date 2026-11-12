@@ -1,3 +1,18 @@
+## UCL 0.4.0 — Design system and editor assistance
+
+- Real native GUI and browser nested panels, independent vertical/horizontal/grid layouts, column spans, caption-safe grids and input focus/select-all.
+- Light/dark themes, semantic design tokens, interaction states and responsive browser breakpoints.
+- Native cancellable integer/hex-color animation, browser keyframes/presets/transitions, reduced-motion support.
+- Compiled Tailwind/CSS stylesheet integration. Optional pinned Tailwind 3.4.19 build helper; use external compiled output for Tailwind 4. No Node/CDN dependency to run built apps.
+- Fix Chromium same-origin form postbacks by using same-origin referrer policy while retaining strict Origin/CSRF checks.
+- Allowlisted same-origin image/font assets with traversal/symlink containment checks and bounded responses.
+- Explicit interactive TUI renderer with numbered controls, input editing, checkbox toggles, grid layout, truecolor TTY output and sanitized plain redirected output.
+- Modern calculator, native design studio, responsive Tailwind browser studio and TUI dashboard examples.
+- VS Code context-aware completions, hover reference and trusted save diagnostics. Fixes capability completion accidentally inserting a nested application; all templates now use ucl- prefixes.
+- Expanded command/property/migration/editor documentation and regression tests, including real native Tk checks on Windows.
+
+Platform differences are explicit: full compiled CSS belongs to browser rendering, not Tk/TUI. Browser UI remains shared-state, server-rendered and script-free. See docs/design.md and docs/migration-0.4.md.
+
 ## UCL 0.3.0 — Live UI, diagnostics and hardened HTTP
 
 ### Download

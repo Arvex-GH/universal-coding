@@ -1,0 +1,92 @@
+[
+  type is gui
+  type is terminal
+  title is "UCL Calculator"
+  window size is 480 x 800
+  layout is vertical
+  window style is {"background": "white", "color": "navy", "font_size": 14, "padding": 8, "margin": 4}
+
+  show label "UCL Calculator" is #heading
+  style #heading is {"font_size": 24, "font_weight": "bold"}
+
+  show input "First number" is #first
+  show input "Second number" is #second
+  style #first is {"width": 28, "background": "white", "color": "black"}
+  style #second is {"width": 28, "background": "white", "color": "black"}
+
+  show label "0" is #result
+  style #result is {"font_size": 32, "font_weight": "bold", "padding": 12}
+  show label "Enter two numbers and choose an operation." is #status
+  style #status is {"font_size": 11, "color": "gray"}
+
+  show button 4x 1. "Add (+)" is #add; 2. "Subtract (-)" is #subtract; 3. "Multiply (*)" is #multiply; 4. "Divide (/)" is #divide
+  style #add is {"background": "navy", "color": "white", "width": 24}
+  style #subtract is {"background": "navy", "color": "white", "width": 24}
+  style #multiply is {"background": "navy", "color": "white", "width": 24}
+  style #divide is {"background": "navy", "color": "white", "width": 24}
+
+  show button "Clear" is #clear
+  style #clear is {"background": "gray", "color": "white", "width": 24}
+  show button "Close" is #close
+  style #close is {"width": 24}
+
+  when button #add is clicked [ call calculate("+") ]
+  when button #subtract is clicked [ call calculate("-") ]
+  when button #multiply is clicked [ call calculate("*") ]
+  when button #divide is clicked [ call calculate("/") ]
+
+  when button #clear is clicked [
+    input #first value is ""
+    input #second value is ""
+    label #result text is "0"
+    label #status text is "Enter two numbers and choose an operation."
+    style #status is {"color": "gray"}
+    log info "Calculator cleared"
+  ]
+
+  when button #close is clicked [ close window ]
+
+  // Functions may appear after their click handlers.
+  to calculate(operation) [
+    try [
+      read input #first into first_text
+      read input #second into second_text
+      let first be number(trim(first_text))
+      let second be number(trim(second_text))
+
+      // Reject NaN and infinity, not just invalid text.
+      assert abs(first) <= 1.7976931348623157e308
+      assert abs(second) <= 1.7976931348623157e308
+
+      if operation == "/" and second == 0 [
+        label #result text is "Error"
+        label #status text is "Cannot divide by zero."
+        style #status is {"color": "red"}
+        log warning "Division by zero rejected"
+        return nothing
+      ]
+
+      let answer be 0
+      if operation == "+" [ set answer to first + second ]
+      if operation == "-" [ set answer to first - second ]
+      if operation == "*" [ set answer to first * second ]
+      if operation == "/" [ set answer to first / second ]
+      assert abs(answer) <= 1.7976931348623157e308
+
+      // Display whole-number results as 42 rather than 42.0.
+      let display be text(answer)
+      if answer == integer(answer) [ set display to text(integer(answer)) ]
+      label #result text is display
+      label #status text is text(first) + " " + operation + " " + text(second)
+      style #status is {"color": "green"}
+      say "Result: " + display
+      log debug "Result label updated"
+    ]
+    catch problem [
+      label #result text is "Error"
+      label #status text is "Use valid numbers; the result must be finite."
+      style #status is {"color": "red"}
+      log warning "Invalid number or numeric overflow"
+    ]
+  ]
+]

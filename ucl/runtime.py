@@ -188,6 +188,14 @@ class Runtime:
                     remaining.append(n)
             if len(remaining) == len(pending): raise UCLError('unresolved or cyclic declarations: ' + ', '.join(classify(n)[1][0] for n in remaining))
             pending = remaining
+        # Theme and tokens resolve before widget styles, regardless of source order.
+        for n in self.nodes:
+            kind, a = classify(n)
+            if kind == 'theme': self.ui.set_theme(a[0].lower())
+            elif kind == 'motion': self.ui.motion = a[0].lower() == 'on'
+        for n in self.nodes:
+            kind, a = classify(n)
+            if kind == 'design_tokens': self.ui.set_tokens(self.expr(a[0]))
         for n in self.nodes:
             kind, a = classify(n)
             if kind == 'title': self.title = str(self.expr(a[0]))
@@ -214,13 +222,19 @@ class Runtime:
                 text = str(self.expr(a[0]))
                 self.labels.append(text)
                 self.ui.add('label', f'_label_{len(self.labels)}', text)
-            elif kind in {'label_named', 'input', 'checkbox'}:
+            elif kind in {'label_named', 'input', 'checkbox', 'panel'}:
                 self.ui.add('label' if kind == 'label_named' else kind, a[1], self.expr(a[0]))
-            elif kind == 'window_style': self.ui.window_style = checked_style(self.expr(a[0]))
+            elif kind == 'window_style': self.ui.window_style = self.ui.check_style(self.expr(a[0]))
+            elif kind == 'assets': self.ui.set_assets(self.expr(a[0]))
+            elif kind == 'stylesheet': self.ui.load_stylesheet(self.expr(a[0]))
             elif kind == 'window_size':
                 self.ui.size = tuple(map(int, a))
                 if any(not 100 <= x <= 4096 for x in self.ui.size): raise UCLError('window dimensions must be 100–4096')
-            elif kind == 'layout': self.ui.direction = a[0].lower()
+            elif kind == 'layout':
+                self.ui.direction = 'grid' if a[1] else a[0].lower()
+                if a[1]:
+                    self.ui.columns = int(a[1])
+                    if not 1 <= self.ui.columns <= 12: raise UCLError('grid columns must be 1–12')
             elif kind == 'debugging': self.debug = a[0].lower() == 'on'
             elif kind == 'http_settings':
                 from .http import settings
@@ -230,7 +244,13 @@ class Runtime:
                 self.timers.append((int(a[0]), n.children))
         for n in self.nodes:
             kind, a = classify(n)
+            if kind == 'place': self.ui.place(a[0], a[1])
+            elif kind == 'panel_layout': self.ui.panel_layout(a[0], a[1], a[2])
+        for n in self.nodes:
+            kind, a = classify(n)
             if kind == 'widget_style': self.ui.style(a[0], self.expr(a[1]))
+            elif kind == 'classes': self.ui.set_classes(a[0], self.expr(a[1]))
+            elif kind in {'state_style', 'responsive_style'}: self.ui.variant(a[0], a[1].lower(), self.expr(a[2]))
             if kind in {'style', 'click'}:
                 ident = a[0]
                 if ident not in self.buttons: raise UCLError(f'unknown button #{ident}')
@@ -402,6 +422,11 @@ class Runtime:
                     value = self.expr(a[1], env)
                     if spec['kind'] == 'checkbox' and type(value) is not bool: raise UCLError('checkbox values must be true or false')
                     self.ui.update(a[0], value, spec['kind'])
+                elif kind == 'classes': self.ui.set_classes(a[0], self.expr(a[1], env))
+                elif kind in {'state_style', 'responsive_style'}: self.ui.variant(a[0], a[1].lower(), self.expr(a[2], env))
+                elif kind == 'animate': self.ui.animate(a[0], self.expr(a[1], env), int(a[2]))
+                elif kind == 'close_interface': self.ui.close_interface()
+                elif kind == 'focus_input': self.ui.focus(a[0], bool(a[1]))
                 elif kind == 'read_input': env[a[1]] = self.ui.read(a[0])
                 elif kind == 'widget_state': self.ui.state(a[1], a[0].lower())
                 elif kind == 'widget_style': self.ui.style(a[0], self.expr(a[1], env))
@@ -482,6 +507,9 @@ class Runtime:
         self.prepare()
         self.execute()
         if 'gui' in self.types: self.desktop()
+        elif 'tui' in self.types:
+            from .tui import run
+            run(self)
         elif self.types & {'server', 'browser'}:
             server = self.make_server()
             self.output(f'UCL listening on http://{self.host}:{server.server_port}')

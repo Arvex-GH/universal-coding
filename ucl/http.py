@@ -144,16 +144,16 @@ class HTTPApplication:
         method = environ.get('REQUEST_METHOD', 'GET').upper()
         origin = environ.get('HTTP_ORIGIN', '')
         cors = origin in self.config['cors_origins']
-        def finish(status, value, kind='json', headers=None):
-            content_type = {'json': 'application/json', 'text': 'text/plain', 'html': 'text/html'}[kind] + '; charset=utf-8'
-            data = (json.dumps(value, allow_nan=False) if kind == 'json' else str(value)).encode('utf-8')
+        def finish(status, value, kind='json', headers=None, mime=None):
+            content_type = mime or {'json': 'application/json', 'text': 'text/plain', 'html': 'text/html'}[kind] + '; charset=utf-8'
+            data = value if mime else (json.dumps(value, allow_nan=False) if kind == 'json' else str(value)).encode('utf-8')
             if len(data) > self.config['max_response_bytes']:
                 status, data, content_type = 500, b'{"error":"response too large"}', 'application/json; charset=utf-8'
             if status in {204, 205, 304}: data = b''
             values = {'Content-Type': content_type, 'Content-Length': str(len(data)),
                       'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY',
-                      'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store', 'X-Request-ID': request_id,
-                      'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"}
+                      'Referrer-Policy': 'same-origin', 'Cache-Control': 'no-store', 'X-Request-ID': request_id,
+                      'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; font-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"}
             if status in {204, 304}: values.pop('Content-Length')
             for key, item in (headers or {}).items():
                 # Enforce safe header syntax even for application-generated mappings.
@@ -204,6 +204,10 @@ class HTTPApplication:
                 try: path = path.encode('latin-1').decode('utf-8')
                 except UnicodeError: pass
                 if 'browser' in self.runtime.types:
+                    if method in {'GET','HEAD'} and path.startswith('/__ucl/assets/'):
+                        asset = self.runtime.ui.asset(path[len('/__ucl/assets/'):])
+                        if asset is None: return finish(404, {'error':'asset not found'})
+                        return finish(200,asset[0],mime=asset[1])
                     cookies = SimpleCookie()
                     try: cookies.load(environ.get('HTTP_COOKIE', ''))
                     except Exception: pass
@@ -224,9 +228,9 @@ class HTTPApplication:
                         ident = path.rsplit('/', 1)[-1]
                         if ident not in self.runtime.buttons: return finish(404, {'error': 'unknown button'})
                         spec = self.runtime.ui.get(ident)
-                        if not spec['visible'] or not spec['enabled']: return finish(403, {'error': 'button unavailable'})
+                        if not self.runtime.ui.available(ident): return finish(403, {'error': 'button unavailable'})
                         for key, spec in self.runtime.ui.elements.items():
-                            if spec['enabled'] and spec['visible'] and spec['kind'] in {'input', 'checkbox'}:
+                            if self.runtime.ui.available(key) and spec['kind'] in {'input', 'checkbox'}:
                                 spec['value'] = key in fields if spec['kind'] == 'checkbox' else fields.get(key, [''])[0]
                         with self.runtime.budget(self.config['max_steps']):
                             self.runtime.execute(self.runtime.handlers.get(ident, []))

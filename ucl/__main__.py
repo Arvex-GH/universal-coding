@@ -31,6 +31,11 @@ def main():
             command.add_argument('--http-threads', type=int, help='bounded Waitress worker count')
             command.add_argument('--max-body', type=int, help='maximum request body bytes')
             command.add_argument('--max-steps', type=int, help='HTTP execution quota per request')
+    design = commands.add_parser('design', help='compile Tailwind utility CSS (optional Node.js build tool)')
+    design.add_argument('file', help='UCL source containing complete utility class strings')
+    design.add_argument('-o', '--output', required=True)
+    design.add_argument('--input', help='custom Tailwind input CSS')
+    design.add_argument('--config', help='custom Tailwind 3 config; trusted executable JavaScript is allowed')
     words = commands.add_parser('words', help='print the machine-readable vocabulary')
     words.add_argument('--details', action='store_true', help='include descriptions and syntax')
     help_parser = commands.add_parser('help', help='offline statement/builtin reference')
@@ -38,6 +43,10 @@ def main():
     args = parser.parse_args()
     runtime = None
     try:
+        if args.command == 'design':
+            from .tailwind import compile_styles
+            print(compile_styles(args.file, args.output, args.input, args.config))
+            return 0
         if args.command in {'words', 'help'}:
             from .reference import details, COMMANDS, BUILTINS
             if args.command == 'words': print(json.dumps(details() if args.details else PATTERNS, indent=2))

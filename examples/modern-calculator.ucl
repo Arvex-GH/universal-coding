@@ -1,0 +1,277 @@
+// Requires UCL 0.4.0 or newer (native GUI grid/focus support).
+[
+  type is gui
+  type is terminal
+  title is "Modern UCL Calculator"
+  window size is 420 x 650
+  layout is grid 4 columns
+  window style is {"background": "#111827", "color": "#e5e7eb", "font_size": 18, "padding": 12, "margin": 4, "border_width": 0}
+
+  object calc [
+    let stored be 0
+    let operator be ""
+    let fresh be false
+    let error be false
+    let rendered be ""
+  ]
+
+  show label "CALCULATOR" is #heading
+  style #heading is {"column_span": 4, "font_size": 12, "color": "#94a3b8", "align": "left"}
+  // The pending first operand lives above the editable main display.
+  show label " " is #history
+  style #history is {"column_span": 4, "font_size": 14, "color": "#94a3b8", "align": "right"}
+  show input "" is #display
+  style #display is {"column_span": 4, "font_size": 32, "width": 14, "background": "#111827", "color": "white", "align": "right"}
+  input #display value is "0"
+
+  show button "AC" is #clear
+  style #clear is {"background": "#263244", "color": "white", "width": 3}
+  show button "⌫" is #back
+  style #back is {"background": "#263244", "color": "white", "width": 3}
+  show button "±" is #sign
+  style #sign is {"background": "#263244", "color": "white", "width": 3}
+  show button "÷" is #divide
+  style #divide is {"background": "#334155", "color": "white", "width": 3}
+  show button "7" is #seven
+  style #seven is {"background": "#263244", "color": "white", "width": 3}
+  show button "8" is #eight
+  style #eight is {"background": "#263244", "color": "white", "width": 3}
+  show button "9" is #nine
+  style #nine is {"background": "#263244", "color": "white", "width": 3}
+  show button "×" is #multiply
+  style #multiply is {"background": "#334155", "color": "white", "width": 3}
+  show button "4" is #four
+  style #four is {"background": "#263244", "color": "white", "width": 3}
+  show button "5" is #five
+  style #five is {"background": "#263244", "color": "white", "width": 3}
+  show button "6" is #six
+  style #six is {"background": "#263244", "color": "white", "width": 3}
+  show button "−" is #subtract
+  style #subtract is {"background": "#334155", "color": "white", "width": 3}
+  show button "1" is #one
+  style #one is {"background": "#263244", "color": "white", "width": 3}
+  show button "2" is #two
+  style #two is {"background": "#263244", "color": "white", "width": 3}
+  show button "3" is #three
+  style #three is {"background": "#263244", "color": "white", "width": 3}
+  show button "+" is #add
+  style #add is {"background": "#334155", "color": "white", "width": 3}
+  show button "0" is #zero
+  style #zero is {"background": "#263244", "color": "white", "width": 3, "column_span": 2}
+  show button "." is #decimal
+  style #decimal is {"background": "#263244", "color": "white", "width": 3}
+  show button "=" is #equals
+  style #equals is {"background": "#2563eb", "color": "white", "width": 3}
+
+  show label "Type a number or use the keypad." is #hint
+  style #hint is {"column_span": 4, "font_size": 10, "color": "#94a3b8", "padding": 6}
+  focus input #display selecting all
+
+  when button #clear is clicked [ call clear_all() ]
+  when button #back is clicked [ call backspace() ]
+  when button #sign is clicked [ call toggle_sign() ]
+  when button #divide is clicked [ call choose_operator("/") ]
+  when button #seven is clicked [ call press_digit("7") ]
+  when button #eight is clicked [ call press_digit("8") ]
+  when button #nine is clicked [ call press_digit("9") ]
+  when button #multiply is clicked [ call choose_operator("*") ]
+  when button #four is clicked [ call press_digit("4") ]
+  when button #five is clicked [ call press_digit("5") ]
+  when button #six is clicked [ call press_digit("6") ]
+  when button #subtract is clicked [ call choose_operator("-") ]
+  when button #one is clicked [ call press_digit("1") ]
+  when button #two is clicked [ call press_digit("2") ]
+  when button #three is clicked [ call press_digit("3") ]
+  when button #add is clicked [ call choose_operator("+") ]
+  when button #zero is clicked [ call press_digit("0") ]
+  when button #decimal is clicked [ call press_digit(".") ]
+  when button #equals is clicked [ call press_equals() ]
+
+  to format_number(value) [
+    if abs(value) < 1000000000000 and value == integer(value) [ return text(integer(value)) ]
+    return text(value)
+  ]
+
+  to parse_number(raw) [
+    let value be number(trim(raw))
+    assert abs(value) <= 1.7976931348623157e308
+    return value
+  ]
+
+  // Keep the selected operator marked while the next number is entered.
+  to mark_operator(operation) [
+    style #add is {"background": "#334155"}
+    style #subtract is {"background": "#334155"}
+    style #multiply is {"background": "#334155"}
+    style #divide is {"background": "#334155"}
+    if operation == "+" [ style #add is {"background": "#2563eb"} ]
+    if operation == "-" [ style #subtract is {"background": "#2563eb"} ]
+    if operation == "*" [ style #multiply is {"background": "#2563eb"} ]
+    if operation == "/" [ style #divide is {"background": "#2563eb"} ]
+  ]
+
+  to clear_all() [
+    set calc.stored to 0
+    set calc.operator to ""
+    set calc.fresh to false
+    set calc.error to false
+    set calc.rendered to ""
+    input #display value is "0"
+    label #history text is " "
+    label #hint text is "Type a number or use the keypad."
+    style #hint is {"color": "#94a3b8"}
+    call mark_operator("")
+    focus input #display selecting all
+  ]
+
+  to report_error(message) [
+    set calc.operator to ""
+    set calc.fresh to true
+    set calc.error to true
+    set calc.rendered to "Error"
+    input #display value is "Error"
+    label #history text is " "
+    label #hint text is message
+    style #hint is {"color": "#fca5a5"}
+    call mark_operator("")
+    log warning message
+    focus input #display selecting all
+  ]
+
+  to press_digit(digit) [
+    read input #display into current
+    if calc.error [
+      if current == "Error" [
+        call clear_all()
+        set current to "0"
+      ]
+      otherwise [
+        set calc.error to false
+        set calc.fresh to false
+        style #hint is {"color": "#94a3b8"}
+      ]
+    ]
+    // If the user has manually edited the result, preserve their edit.
+    if calc.fresh and current == calc.rendered [
+      set current to ""
+      label #history text is " "
+    ]
+    set calc.fresh to false
+    if digit == "." [
+      if contains(current, ".") [ return nothing ]
+      if current == "" or current == "-" [ set current to current + "0" ]
+    ]
+    otherwise [
+      if current == "0" [ set current to "" ]
+      if current == "-0" [ set current to "-" ]
+    ]
+    if length(current) >= 18 [ return nothing ]
+    input #display value is current + digit
+    label #hint text is " "
+    focus input #display
+  ]
+
+  to choose_operator(operation) [
+    try [
+      read input #display into current
+      if calc.error [
+        if current == "Error" [ return nothing ]
+        set calc.error to false
+        set calc.fresh to false
+      ]
+      set current to trim(current)
+      // Pressing another operator before entering a number replaces it.
+      if calc.operator != "" and current == "" [
+        set calc.operator to operation
+        label #history text is format_number(calc.stored) + " " + operation
+        call mark_operator(operation)
+        focus input #display
+        return nothing
+      ]
+      // Chained operations are evaluated left-to-right, like a basic calculator.
+      if calc.operator != "" [
+        call press_equals()
+        if calc.error [ return nothing ]
+        read input #display into current
+      ]
+      if current == "" [ set current to "0" ]
+      set calc.stored to parse_number(current)
+      set calc.operator to operation
+      set calc.fresh to false
+      label #history text is format_number(calc.stored) + " " + operation
+      input #display value is ""
+      label #hint text is "Enter the next number."
+      style #hint is {"color": "#94a3b8"}
+      call mark_operator(operation)
+      focus input #display
+    ]
+    catch problem [ call report_error("Enter a valid finite number.") ]
+  ]
+
+  to press_equals() [
+    if calc.operator == "" [ return nothing ]
+    read input #display into current
+    if trim(current) == "" [
+      label #hint text is "Enter the second number first."
+      focus input #display
+      return nothing
+    ]
+    try [
+      let right be parse_number(current)
+      if calc.operator == "/" and right == 0 [
+        call report_error("Cannot divide by zero.")
+        return nothing
+      ]
+      let answer be 0
+      if calc.operator == "+" [ set answer to calc.stored + right ]
+      if calc.operator == "-" [ set answer to calc.stored - right ]
+      if calc.operator == "*" [ set answer to calc.stored * right ]
+      if calc.operator == "/" [ set answer to calc.stored / right ]
+      assert abs(answer) <= 1.7976931348623157e308
+      let result be format_number(answer)
+      label #history text is format_number(calc.stored) + " " + calc.operator + " " + format_number(right) + " ="
+      input #display value is result
+      set calc.stored to answer
+      set calc.operator to ""
+      set calc.fresh to true
+      set calc.error to false
+      set calc.rendered to result
+      call mark_operator("")
+      label #hint text is "Result. Choose an operator to continue."
+      style #hint is {"color": "#94a3b8"}
+      say "Result: " + result
+      focus input #display selecting all
+    ]
+    catch problem [ call report_error("Invalid number or numeric overflow.") ]
+  ]
+
+  to backspace() [
+    if calc.error [ call clear_all() ]
+    read input #display into current
+    let shortened be ""
+    for each index in range(max(0, length(current) - 1)) [
+      set shortened to shortened + item(current, index)
+    ]
+    if shortened == "" or shortened == "-" [ set shortened to "0" ]
+    input #display value is shortened
+    set calc.fresh to false
+    if calc.operator == "" [ label #history text is " " ]
+    focus input #display
+  ]
+
+  to toggle_sign() [
+    if calc.error [ call clear_all() ]
+    read input #display into current
+    if current == "" [ set current to "0" ]
+    if item(current, 0) == "-" [
+      let positive be ""
+      for each index in range(1, length(current)) [ set positive to positive + item(current, index) ]
+      set current to positive
+    ]
+    otherwise [ set current to "-" + current ]
+    input #display value is current
+    set calc.fresh to false
+    if calc.operator == "" [ label #history text is " " ]
+    focus input #display
+  ]
+]

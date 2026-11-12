@@ -13,3 +13,24 @@ jobs:
           python-version: '${{ matrix.python }}'
       - run: python -m pip install -e .
       - run: python -m unittest discover -s tests -v
+  design:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install -e .
+      - name: Editor regression tests
+        run: node --test editors/vscode/test/extension.test.js
+      - name: Rebuild actual Tailwind CSS
+        run: |
+          python -m ucl design examples/design-studio.ucl -o examples/design-studio.css
+          git diff --exit-code -- examples/design-studio.css
+      - name: Install optional real browser test tools
+        run: npm ci --prefix tools/browser --no-audit --no-fund
+      - name: Real Chromium design and secure form conformance
+        run: python tools/browser_smoke.py

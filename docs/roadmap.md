@@ -1,6 +1,8 @@
-# Remaining work after UCL 0.3
+# Remaining work after UCL 0.4
 
-UCL 0.3 implements live labels, inputs/checkboxes, shared styling, GUI timers, terminal/file I/O, logging/tracing, loops, try/catch, SQLite transaction blocks, and a hardened Waitress-based HTTP foundation. This roadmap lists **unimplemented** work, not capabilities to assume exist.
+See the [design guide](design.md) for implemented panels/grids/themes/states/animations/Tailwind integration and TUI support. This roadmap describes remaining boundaries, not capabilities to assume exist.
+
+
 
 ## Language/runtime
 
@@ -12,8 +14,8 @@ UCL 0.3 implements live labels, inputs/checkboxes, shared styling, GUI timers, t
 
 ## UI
 
-- Nested layout containers/grids, menus, dropdowns, tables, multiline editors, dialogs and accessibility/platform test coverage.
-- Browser per-user state/session architecture; progressive updates/assets beyond postback forms.
+- Menus, dropdowns, tables, multiline editors, dialogs, custom native rounded/vector widgets, and broader accessibility/platform test coverage.
+- Browser per-user state/session architecture; progressive live DOM updates beyond postback forms.
 - Concurrent desktop + HTTP hosting with an explicit lifecycle/thread-safety model.
 
 ## HTTP/data deployment
@@ -33,7 +35,7 @@ UCL 0.3 implements live labels, inputs/checkboxes, shared styling, GUI timers, t
 
 ## Editor/debugger
 
-- Language Server Protocol diagnostics/completion/navigation from the existing vocabulary registry.
+- Full Language Server Protocol, semantic diagnostics, type-aware completion and definition/reference navigation beyond the current lightweight providers.
 - Breakpoints, stepping, call-stack/local-variable inspection, restart/hot reload.
 - Context-aware capability fixes (for example missing gui/browser type).
 
