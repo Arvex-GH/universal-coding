@@ -439,13 +439,13 @@ class LiveTransportTests(unittest.TestCase):
         self.addCleanup(cleanup)
         return r
 
-    def request(self, path='/', headers=None, data=None, method=None):
+    def request(self, path='/', headers=None, data=None, method=None, read_body=True):
         import urllib.request
         import urllib.error
         request = urllib.request.Request(self.url + path, headers=headers or {}, data=data, method=method)
         try: response = urllib.request.urlopen(request, timeout=5)
         except urllib.error.HTTPError as error: response = error
-        with response: return response.status, response.read(), dict(response.headers)
+        with response: return response.status, response.read() if read_body else b'', dict(response.headers)
 
     def test_forwarded_identity_ignored_by_default(self):
         self.start('when get "/" [respond request.client]')
@@ -461,8 +461,10 @@ class LiveTransportTests(unittest.TestCase):
 
     def test_transport_body_and_header_limits(self):
         self.start('when post "/" [respond true]', {'max_body_bytes': 10, 'max_header_bytes': 1024})
-        self.assertEqual(self.request(data=b'x' * 11)[0], 413)
-        self.assertEqual(self.request(headers={'X-Large': 'x' * 2000})[0], 431)
+        # Early transport rejection can reset unread data on Windows after the
+        # error headers. The transport guarantee here is rejection status, not body.
+        self.assertEqual(self.request(data=b'x' * 11, read_body=False)[0], 413)
+        self.assertEqual(self.request(headers={'X-Large': 'x' * 2000}, read_body=False)[0], 431)
 
     def test_live_host_and_head(self):
         self.start('when get "/" [respond "hello"]')
