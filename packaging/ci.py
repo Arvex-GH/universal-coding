@@ -9,7 +9,9 @@ def main():
                             text=True, encoding='utf-8', errors='replace')
     print(result.stdout, end='')
     if result.returncode and os.environ.get('GITHUB_ACTIONS') == 'true':
-        message = result.stdout[-16000:].replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+        # GitHub truncates annotation messages: retain the actual failure/summary
+        # at the end rather than thousands of successful verbose test lines.
+        message = result.stdout[-3500:].replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
         print('::error::' + message)
     return result.returncode
 
