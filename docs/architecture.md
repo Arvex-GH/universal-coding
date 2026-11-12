@@ -1,34 +1,35 @@
-# Architecture and native-compilation research
+# Runtime/compiler architecture
 
-## Pipeline
+## Frontend
 
-1. `ucl/language.py`: character scanner preserves quoted strings, source lines, parentheses and record literals; square brackets create recursively parsed `Node` blocks.
-2. Ordered, anchored statement patterns classify every node. Whole-file validation checks expression syntax, capability vocabulary, and placement of route/function-only operations before execution.
-3. `ucl/runtime.py`: function registration and dependency-resolved root declarations precede metadata, connections, route and UI registration. UI styles and handlers resolve after all buttons exist. Duplicate values, functions, database names, routes, properties and button IDs fail.
-4. Actions execute in source order through explicit statement dispatch. Expressions are parsed using Python's `ast` parser and traversed by a restricted evaluator. Parsing Python expression syntax is not executing Python: there is no `eval`, `exec`, Python attribute access, arbitrary callable exposure or import access.
-5. Backends: terminal output; real Tk desktop widgets; HTTP-served HTML forms; exact-path HTTP routes; SQLite data access. `Runtime.make_server` returns a server object for tests and embedding.
-6. `ucl/native.py`: accepts only its documented numeric terminal subset, emits C99, and invokes the system compiler with an argument vector (no shell interpolation). Unsupported features are errors, not silent interpreter fallbacks. Temporary C files are removed automatically; `emit-c` exposes generated source for inspection.
+`ucl/language.py` scans character-by-character, preserving quoted strings, source lines, parentheses and record literals. Square brackets form recursive `Node` blocks. Anchored patterns classify all statements, and validation checks expression syntax, capabilities and placement before execution.
 
-## How C reaches machine code
+`ucl/reference.py` is a human-facing vocabulary registry keyed to those same patterns. It powers offline help, detailed JSON vocabulary and the generated GitHub reference. Coverage tests require every statement and builtin to be documented.
 
-The official Clang manual describes the stages:
+## Execution
 
-- **Preprocessing**: tokenization, includes, macros.
-- **Parsing/semantic analysis**: build and check an AST.
-- **Code generation/optimization**: lower to LLVM IR and target-specific code.
-- **Assembly**: encode target instructions into object files.
-- **Linking**: combine objects and libraries into executables.
+`ucl/runtime.py` registers functions and dependency-resolves root values/objects before actions. Expressions are parsed with Python ast and traversed by an explicit restricted evaluator; there is no eval/exec, import exposure or Python attribute lookup. UCL properties/methods are resolved only through UCL records/objects. Root initializers should be pure because unresolved dependencies may be retried.
 
-Reference: [Clang compiler command guide](https://clang.llvm.org/docs/CommandGuide/clang.html).
+Actions dispatch explicitly. Runtime errors are annotated with source lines. Functions have local scalar environments; mutable objects can be shared. SQLite connections are application-owned; transactions override per-statement autocommit. Statement/expression budgets count cooperative interpreter work, not CPU time, memory or blocking library calls.
 
-UCL does not need C's textual preprocessor. It does need parsing, semantic rules, lowering and a runtime/ABI for dynamic values, object methods, GUI callbacks and network/database operations. Reusing a mature C compiler gives the initial native subset real machine-code output without pretending an English keyword independently maps to one CPU instruction. Built native programs use the C standard library and platform runtime, rather than being universally portable binaries.
+## Shared UI
 
-## Why two execution paths?
+`ucl/ui.py` owns an ordered widget model, validated shared styles, current text/input/checkbox state and native widget handles. Native Tk rendering and browser form rendering consume the same state. Updates synchronize native widgets or appear on the next HTML render. Desktop timers use Tk.after, not background threads. Browser state is application-wide, not a per-user session architecture.
 
-The interpreter makes the broad dynamic feature set usable today. The C path proves a native lowering boundary with explicit rejection of unsupported constructs. Expanding it responsibly requires a typed intermediate representation and a defined tagged-value ABI before implementing strings, closures, objects, networking and UI there. Packaging an interpreter inside an executable would not be the same claim as compiling all those semantics to native code.
+## HTTP
 
-## Operational boundaries
+`ucl/http.py` is a WSGI application plus a lifecycle adapter for Waitress. It handles configuration, host allowlists, explicit proxy trust, constant-time bearer comparison, signed double-submit browser CSRF, bounded fixed-window rate state, routing, input parsing, response serialization, safe headers and correlation logs. Waitress provides bounded worker/connection controls and HTTP framing/header/body handling; Python's development HTTP server is no longer used.
 
-No parser-level security promise replaces an OS sandbox. Loops, recursion and data structures have no execution quota. The HTTP runtime limits body size and serializes requests, but uses Python's development HTTP stack without production-grade deadlines/concurrency controls. Browser rendering escapes strings and rejects supplied foreign Origin headers for clicks; it is not an authentication or comprehensive CSRF system. SQLite transactions are statement-scoped. Shutdown closes the listener and CLI-owned connections; applications with long-running active requests need a stronger graceful-shutdown layer before production deployment.
+UCL actions serialize under an application lock, preserving shared-state/SQLite safety at the cost of throughput. Blocking calls are not forcibly canceled. Public deployments still require TLS/reverse-proxy protections, authentication/authorization appropriate to the app, supervision, resource limits and load/security review. See the deployment guide rather than interpreting this architecture as an audit/certification.
 
-No GUI display is assumed in CI. Tests verify desktop declarations, styles and callbacks without opening a real window. Actual platform widget appearance and desktop accessibility require manual tests on graphical Windows/macOS/Linux sessions.
+## Native compilation and distribution
+
+`ucl/native.py` lowers the documented numeric terminal subset to C99, then invokes a system GCC/Clang-compatible compiler using argument vectors without a shell. Unsupported statements fail explicitly. This backend is separate from standalone tool packaging: the installed Windows `ucl.exe` bundles the interpreter, Waitress, Tk and SQLite, avoiding an end-user Python dependency but not making the entire language self-hosted/native.
+
+C does not translate English keywords directly to independent CPU instructions. Its compiler pipeline performs preprocessing, parsing/semantic analysis, lowering/optimization, code generation, assembly and linking. UCL reuses that mature backend through C, without needing C's textual preprocessor. Official research source: [Clang compiler command guide](https://clang.llvm.org/docs/CommandGuide/clang.html).
+
+Full native strings/objects/GUI/networking require a stable typed IR, value/ownership ABI and runtime libraries; bundling an interpreter is not that achievement. Native output uses platform runtimes and is not a universal cross-platform binary.
+
+## Validation
+
+Unit/integration tests cover syntax, semantics, native subset, UI model/Tk dispatch, terminal I/O, files, logging, WSGI security policies, live Waitress requests and documentation/version consistency. Windows CI builds frozen UCL, tests it outside the checkout, and performs actual install → upgrade → reinstall → uninstall. Desktop appearance/accessibility across operating systems still requires manual graphical testing. No test suite substitutes for independent security review or real deployment load/soak testing.

@@ -2,7 +2,7 @@
   "name": "ucl-language",
   "displayName": "UCL \u2014 Universal Coding Language",
   "description": "UCL highlighting, snippets, and Run/Check commands",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "ucl-language",
   "license": "MIT",
   "repository": {
@@ -52,6 +52,10 @@
       {
         "command": "ucl.checkFile",
         "title": "UCL: Check Current File"
+      },
+      {
+        "command": "ucl.traceFile",
+        "title": "UCL: Run Current File with Trace"
       }
     ],
     "menus": {

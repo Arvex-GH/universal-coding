@@ -1,0 +1,29 @@
+[
+  type is server
+  host is "127.0.0.1"
+  port is 8080
+  // Set UCL_API_TOKEN in your environment before starting; never put secrets here.
+  http settings is {"allowed_hosts": list("localhost", "127.0.0.1"), "auth_token_environment": "UCL_API_TOKEN", "threads": 4, "max_body_bytes": 65536, "max_steps": 20000, "rate_limit": 120}
+  database app is "notes.db"
+  execute "CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, text TEXT NOT NULL)" on app
+
+  when get "/health" [ respond {"status": "ok"} ]
+  when get "/notes/{id}" [
+    query "SELECT id, text FROM notes WHERE id = ?" on app using list(request.params.id) into rows
+    require length(rows) > 0 else status 404
+    respond item(rows, 0)
+  ]
+  when post "/notes" [
+    require type_of(request.json) == "dict" else status 400
+    require contains(request.json, "text") else status 400
+    require type_of(request.json.text) == "str" else status 400
+    require length(request.json.text) > 0 else status 422
+    transaction on app [
+      execute "INSERT INTO notes (text) VALUES (?)" on app using list(request.json.text)
+      query "SELECT last_insert_rowid() AS id" on app into created
+    ]
+    status is 201
+    header "Location" is "/notes/" + text(item(created, 0).id)
+    respond item(created, 0)
+  ]
+]

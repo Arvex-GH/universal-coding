@@ -56,3 +56,9 @@ test('cancelled save and non-UCL editors do not execute', async () => {
   await f.commands['ucl.runFile']();
   assert.equal(f.tasks.length, 0);
 });
+
+test('trace command enables action diagnostics without a shell', async () => {
+  const f = fixture();
+  await f.commands['ucl.traceFile']();
+  assert.deepEqual(f.tasks[0].execution.args, ['run', f.document.uri.fsPath, '--trace']);
+});

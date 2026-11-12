@@ -1,37 +1,40 @@
-# UCL development roadmap
+# Remaining work after UCL 0.3
 
-The implementation is versioned deliberately. A language with the complete capabilities of Python, JavaScript, Java, C and SQL requires years of specification, libraries and compatibility work. Nothing in this roadmap is claimed as implemented.
+UCL 0.3 implements live labels, inputs/checkboxes, shared styling, GUI timers, terminal/file I/O, logging/tracing, loops, try/catch, SQLite transaction blocks, and a hardened Waitress-based HTTP foundation. This roadmap lists **unimplemented** work, not capabilities to assume exist.
 
-## 1. Semantics and diagnostics
+## Language/runtime
 
-- Freeze grammar/version negotiation; structured diagnostic codes, source columns and spans.
-- Typed intermediate representation and static name/type analysis; eliminate initializer retry effects.
-- Explicit module system, imports, dependency manifests and permission model.
-- Full object lifecycle, constructors, interfaces and inheritance/composition design.
-- Exceptions, iteration over collections, while loops, string utilities, file APIs and test syntax.
-- Fuzz scanner/parser and define resource budgets for embedded execution.
+- Formal versioned grammar, source columns/spans, structured diagnostic codes, stronger static name/type analysis.
+- Typed IR, modules/imports/packages, dependency manifests, explicit capability/permission policies.
+- Initializer graph analysis without retry effects; constructors, interfaces, inheritance/composition semantics.
+- Async/background tasks, cancellation and non-blocking database/filesystem adapters.
+- OS-level isolation and enforceable CPU/memory limits for untrusted programs (currently not a sandbox).
 
-## 2. Runtime and deployment
+## UI
 
-- Production HTTP adapter, streaming, middleware, TLS deployment guidance, authentication helpers, request limits, graceful shutdown and isolated state.
-- Database migration/transaction blocks, indexed access and optional PostgreSQL adapter.
-- Async/background tasks with cancellation and defined thread-safety semantics.
-- Desktop layouts, inputs, menus, dialogs, accessibility and cross-platform GUI tests.
-- Browser state model and assets rather than postback-only forms.
+- Nested layout containers/grids, menus, dropdowns, tables, multiline editors, dialogs and accessibility/platform test coverage.
+- Browser per-user state/session architecture; progressive updates/assets beyond postback forms.
+- Concurrent desktop + HTTP hosting with an explicit lifecycle/thread-safety model.
 
-## 3. Native backend
+## HTTP/data deployment
 
-- Tagged value ABI with string/list/record ownership rules.
-- User functions, object methods and dynamic runtime primitives in native builds.
-- Networking/SQLite/Tk adapters with platform packaging.
-- Optional LLVM backend after the IR and conformance suite stabilize.
-- Cross-platform distribution, reproducibility and compiler diagnostics mapped to UCL source.
+- Independent security audit, protocol fuzzing and workload-specific load/soak benchmarks.
+- Dedicated schema validation, application authentication/authorization/session integrations.
+- Distributed state/rate-limiting adapters, streaming/WebSockets and outbound HTTP clients.
+- Hard deadline/cancellation semantics, robust long-running worker drain/abort behavior.
+- Database migrations and PostgreSQL adapter; multi-process storage guidelines and operational tooling.
 
-## 4. IDE (after language semantics stabilize)
+## Compilation/distribution
 
-- Expand `ucl words` into a versioned registry with examples, capability requirements, valid contexts and documentation links.
-- Language Server Protocol completion, diagnostics, hover, reference navigation and renaming.
-- Context-aware suggestions: `button` without a renderer offers `type is gui` / `type is browser`; `looks` proposes colors and padding.
-- Preview/desktop launch controls without silently changing the selected application type.
+- Tagged value ownership ABI and full native function/object/string lowering before networking/UI backends.
+- Cross-platform packaging and optional LLVM backend after IR/conformance stability.
+- Windows code signing, ARM64-native installer, signed update manifests/automatic updater.
+- Reproducible dependency lock/build attestation and supply-chain verification.
 
-Mobile support remains explicitly excluded for now.
+## Editor/debugger
+
+- Language Server Protocol diagnostics/completion/navigation from the existing vocabulary registry.
+- Breakpoints, stepping, call-stack/local-variable inspection, restart/hot reload.
+- Context-aware capability fixes (for example missing gui/browser type).
+
+Mobile remains out of scope. Production suitability always depends on the application, infrastructure, threat model and validation, not a version label alone.

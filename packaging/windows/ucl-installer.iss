@@ -1,6 +1,6 @@
-; Build from repository root: ISCC /DAppVersion=0.2.0 packaging\windows\ucl-installer.iss
+; Build from repository root: ISCC /DAppVersion=0.3.0 packaging\windows\ucl-installer.iss
 #ifndef AppVersion
-  #define AppVersion "0.2.0"
+  #define AppVersion "0.3.0"
 #endif
 #ifndef OutputBase
   #define OutputBase "ucl-installer"
@@ -39,9 +39,12 @@ Source: "..\..\dist\ucl\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdir
 Source: "..\..\examples\*.ucl"; DestDir: "{app}\examples"; Flags: ignoreversion
 Source: "..\..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\docs\windows.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\UCL command prompt"; Filename: "{cmd}"; Parameters: "/K """"{app}\ucl.exe"" --version"""; WorkingDir: "{app}\examples"
+Name: "{group}\UCL documentation"; Filename: "https://github.com/Arvex-GH/universal-coding/tree/main/docs"
 Name: "{group}\UCL examples"; Filename: "{app}\examples"
 Name: "{group}\Uninstall UCL"; Filename: "{uninstallexe}"
 

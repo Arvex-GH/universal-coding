@@ -1,6 +1,75 @@
 {
-  "Terminal application": {"prefix": "terminal", "body": ["[", "  type is terminal", "  $0", "]"], "description": "A terminal UCL program"},
-  "Ask for a number": {"prefix": "ask", "body": "ask for number \"${1:Enter a number: }\" into ${2:value}"},
-  "Native desktop application": {"prefix": "gui", "body": ["[", "  type is gui", "  title is \"${1:My application}\"", "  show button \"${2:Click me}\" is #${3:hello}", "  when button #${3:hello} is clicked [", "    $0", "  ]", "]"]},
-  "HTTP route": {"prefix": "route", "body": ["when ${1|get,post,put,delete,patch|} \"${2:/}\" [", "  respond ${0:true}", "]"]}
+  "Terminal application": {
+    "prefix": "terminal",
+    "body": [
+      "[",
+      "  type is terminal",
+      "  $0",
+      "]"
+    ],
+    "description": "A terminal UCL program"
+  },
+  "Ask for a number": {
+    "prefix": "ask",
+    "body": "ask for number \"${1:Enter a number: }\" into ${2:value}"
+  },
+  "Native desktop application": {
+    "prefix": "gui",
+    "body": [
+      "[",
+      "  type is gui",
+      "  title is \"${1:My application}\"",
+      "  show button \"${2:Click me}\" is #${3:hello}",
+      "  when button #${3:hello} is clicked [",
+      "    $0",
+      "  ]",
+      "]"
+    ]
+  },
+  "HTTP route": {
+    "prefix": "route",
+    "body": [
+      "when ${1|get,post,put,delete,patch|} \"${2:/}\" [",
+      "  respond ${0:true}",
+      "]"
+    ]
+  },
+  "Live label": {
+    "prefix": "label",
+    "body": "show label \"${1:Ready}\" is #${2:status}"
+  },
+  "Widget style": {
+    "prefix": "style",
+    "body": "style #${1:status} is {\"font_size\": ${2:24}, \"font_weight\": \"bold\"}"
+  },
+  "Read input": {
+    "prefix": "input",
+    "body": [
+      "show input \"${1:Your name}\" is #${2:name}",
+      "read input #${2:name} into ${3:name}"
+    ]
+  },
+  "Debug message": {
+    "prefix": "log",
+    "body": "log ${1|debug,info,warning,error|} \"${2:Message}\""
+  },
+  "Try catch": {
+    "prefix": "try",
+    "body": [
+      "try [",
+      "  $0",
+      "]",
+      "catch problem [",
+      "  log error problem",
+      "]"
+    ]
+  },
+  "For each": {
+    "prefix": "foreach",
+    "body": [
+      "for each ${1:item} in ${2:items} [",
+      "  $0",
+      "]"
+    ]
+  }
 }
