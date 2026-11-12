@@ -9,6 +9,8 @@ permissions:
 jobs:
   windows:
     runs-on: windows-latest
+    env:
+      PYTHONUTF8: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -22,23 +24,23 @@ jobs:
           python -m pip install -e . -r packaging/requirements.txt
           npm install --global @vscode/vsce@3.6.2
       - name: Test language
-        run: python -m unittest discover -s tests -v
+        run: python packaging/ci.py python -m unittest discover -s tests -v
       - name: Freeze standalone UCL (includes Tk and SQLite)
-        run: python packaging/build.py
+        run: python packaging/ci.py python packaging/build.py
       - name: Smoke test standalone CLI
-        run: python packaging/smoke.py dist/ucl/ucl.exe
+        run: python packaging/ci.py python packaging/smoke.py dist/ucl/ucl.exe
       - name: Build installers
         shell: pwsh
         run: |
           $version = python -c "from ucl import __version__; print(__version__)"
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { throw 'Inno Setup 6 is required on the runner' }
-          & $iscc /DAppVersion=0.1.0 /DOutputBase=ucl-test-old packaging/windows/ucl-installer.iss
+          python packaging/ci.py "$iscc" /DAppVersion=0.1.0 /DOutputBase=ucl-test-old packaging/windows/ucl-installer.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          & $iscc "/DAppVersion=$version" packaging/windows/ucl-installer.iss
+          python packaging/ci.py "$iscc" "/DAppVersion=$version" packaging/windows/ucl-installer.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Test install, upgrade, PATH, and uninstall
-        run: python packaging/windows/test_installer.py
+        run: python packaging/ci.py python packaging/windows/test_installer.py
       - name: Package VS Code extension
         working-directory: editors/vscode
         run: vsce package --allow-missing-repository --out ../../dist/ucl-language.vsix
