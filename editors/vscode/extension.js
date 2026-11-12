@@ -2,6 +2,8 @@
 const path = require('node:path');
 
 function activate(context, vscode = require('vscode')) {
+  require('./completions').registerCompletions(context, vscode);
+  require('./diagnostics').registerDiagnostics(context, vscode);
   async function execute(action, trace = false) {
     if (!vscode.workspace.isTrusted) {
       vscode.window.showErrorMessage('Trust this workspace before running UCL code.');

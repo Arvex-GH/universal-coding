@@ -53,6 +53,14 @@ def smoke(executable):
  ]
 ]''', encoding='utf-8')
             assert 'GUI_OK' in run('run', str(gui))
+            native = Path(__file__).resolve().parents[1] / 'examples' / 'native-design.ucl'
+            design = Path(tmp) / 'native-design.ucl'
+            original = native.read_text(encoding='utf-8').rstrip()
+            design.write_text(original[:-1] + '\n every 100 milliseconds [\n say "NATIVE_DESIGN_OK"\n close interface\n ]\n]', encoding='utf-8')
+            assert 'NATIVE_DESIGN_OK' in run('run', str(design))
+        tui = Path(tmp) / 'tui.ucl'
+        tui.write_text('[type is tui\ntheme is dark\nshow label "TUI_OK" is #ok\nshow button "Quit" is #quit\nwhen button #quit is clicked [close interface]]', encoding='utf-8')
+        assert 'TUI_OK' in run('run', str(tui), input='1\n')
         api = Path(tmp) / 'api.ucl'
         api.write_text('''[type is server
  port is 0

@@ -15,6 +15,10 @@
         {
           "name": "constant.character.escape.ucl",
           "match": "\\\\."
+        },
+        {
+          "name": "constant.other.color.rgb-value.ucl",
+          "match": "#[0-9a-fA-F]{6}\\b"
         }
       ]
     },
@@ -26,8 +30,27 @@
         {
           "name": "constant.character.escape.ucl",
           "match": "\\\\."
+        },
+        {
+          "name": "constant.other.color.rgb-value.ucl",
+          "match": "#[0-9a-fA-F]{6}\\b"
         }
       ]
+    },
+    {
+      "name": "support.function.builtin.ucl",
+      "match": "\\b(?:length|text|number|integer|list|item|keys|values|min|max|round|abs|json|parse_json|environment|argument|upper|lower|trim|split|join|replace|contains|range|type_of|floor|ceil|sqrt|escape_html)\\b(?=\\s*\\()"
+    },
+    {
+      "match": "\\b(to)\\s+([A-Za-z_]\\w*)(?=\\s*\\()",
+      "captures": {
+        "1": {
+          "name": "keyword.control.ucl"
+        },
+        "2": {
+          "name": "entity.name.function.ucl"
+        }
+      }
     },
     {
       "name": "entity.name.tag.ucl",
@@ -43,7 +66,7 @@
     },
     {
       "name": "keyword.control.ucl",
-      "match": "(?i)\\b(?:close|enable|disable|hide|reveal|label|input|checkbox|read|style|window|size|layout|vertical|horizontal|value|debugging|log|debug|info|warning|error|text|secret|every|milliseconds|while|for|each|break|continue|try|catch|assert|append|write|file|html|header|require|else|transaction|settings|http|type|is|gui|browser|terminal|server|database|title|port|host|ask|for|number|into|let|be|set|to|say|print|if|otherwise|repeat|times|return|call|object|create|from|show|button|text|looks|padding|when|clicked|respond|status|execute|query|on|using|get|post|put|delete|patch)\\b"
+      "match": "(?i)\\b(?:assets|panel|place|inside|theme|light|dark|design|tokens|motion|off|classes|stylesheet|animate|over|hover|focus|active|disabled|at|interface|tui|grid|columns|selecting|all|close|enable|disable|hide|reveal|label|input|checkbox|read|style|window|size|layout|vertical|horizontal|value|debugging|log|debug|info|warning|error|text|secret|every|milliseconds|while|for|each|break|continue|try|catch|assert|append|write|file|html|header|require|else|transaction|settings|http|type|is|gui|browser|terminal|server|database|title|port|host|ask|for|number|into|let|be|set|to|say|print|if|otherwise|repeat|times|return|call|object|create|from|show|button|text|looks|padding|when|clicked|respond|status|execute|query|on|using|get|post|put|delete|patch)\\b"
     },
     {
       "name": "keyword.operator.ucl",

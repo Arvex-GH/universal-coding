@@ -1,0 +1,34 @@
+[
+  type is gui
+  title is "UCL — Native Design"
+  theme is dark
+  design tokens is {"primary": "#8b5cf6"}
+  window size is 620 x 460
+  show label "Your workspace" is #heading
+  style #heading is {"font_size": 26, "font_weight": "bold", "align": "left"}
+  show panel "Project settings" is #settings
+  style #settings is {"padding": 16, "border_width": 1, "border_color": "$border"}
+  show input "Project name" is #name
+  place #name inside #settings
+  input #name value is "New project"
+  style #name is {"width": 32, "background": "$background", "color": "$text", "border_width": 1}
+  style #name when focus is {"border_color": "$primary"}
+  show panel "Actions" is #actions
+  place #actions inside #settings
+  panel #actions layout is grid 2 columns
+  show button "Save" is #save
+  place #save inside #actions
+  style #save is {"background": "$primary", "color": "white", "padding_x": 24, "padding_y": 12}
+  style #save when hover is {"background": "#7c3aed"}
+  show button "Close" is #close
+  place #close inside #actions
+  show label "Ready" is #status
+  style #status is {"color": "#94a3b8", "font_size": 14}
+  focus input #name selecting all
+  when button #save is clicked [
+    read input #name into name
+    label #status text is "Saved: " + name
+    animate #status to {"color": "#34d399"} over 400 milliseconds
+  ]
+  when button #close is clicked [ close interface ]
+]

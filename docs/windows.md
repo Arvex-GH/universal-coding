@@ -115,7 +115,7 @@ To build manually on Windows with Python 3.12 and Inno Setup 6:
 python -m pip install -e . -r packaging/requirements.txt
 python packaging/build.py
 python packaging/smoke.py dist/ucl/ucl.exe
-& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DAppVersion=0.3.0 packaging/windows/ucl-installer.iss
+& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DAppVersion=0.4.0 packaging/windows/ucl-installer.iss
 ```
 
 Generated distributions and installer binaries stay out of Git; GitHub Release assets are the distribution channel. Code signing, ARM64-native builds and a production-strength auto-updater remain future work.

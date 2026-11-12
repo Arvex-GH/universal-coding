@@ -42,7 +42,7 @@ Request properties:
 
 `respond EXPR` ends the handler with JSON. `respond text EXPR` and `respond html EXPR` select plain text or HTML. HTML is intentionally trusted markup: use `escape_html(untrusted)` when composing it. `status is N` selects 200–599. `require CONDITION else status N` rejects false conditions with generic JSON and 400–599. Validate payload **shape, types, sizes and business rules**, not only JSON syntax.
 
-`header "Name" is EXPR` sets printable ASCII headers; CR/LF and transport-managed headers (including Content-Length/Type) are rejected. Runtime security headers include nosniff, DENY framing, no-store caching, no-referrer and a restrictive CSP. Do not weaken them casually. HEAD, 204, 205 and 304 suppress response bodies; 204/304 omit Content-Length.
+`header "Name" is EXPR` sets printable ASCII headers; CR/LF and transport-managed headers (including Content-Length/Type) are rejected. Runtime security headers include nosniff, DENY framing, no-store caching, same-origin referrer policy and a restrictive CSP. Do not weaken them casually. HEAD, 204, 205 and 304 suppress response bodies; 204/304 omit Content-Length.
 
 Handler exceptions return generic 500 JSON with a correlation ID. Details are logged locally, never tracebacks in HTTP responses. Transport-level failures raised by Waitress itself (such as an oversized header/body) can use its own error format instead of UCL JSON. Early transport rejections may close/reset a connection before a client reads the complete error body (notably with unread oversized uploads on Windows); clients must handle transport errors as well as HTTP statuses, and edge limits should reject oversized input before forwarding it. Access logs contain no request bodies, Authorization values or query strings.
 
@@ -137,3 +137,5 @@ Ctrl+C closes the listener, stops workers (bounded shutdown wait), closes channe
 - [ ] A threat model and independent security review for sensitive/public services.
 
 The included tests exercise protocol/application safeguards and installer packaging. They do not certify compliance, resistance to every denial-of-service vector, or production suitability for an arbitrary workload.
+
+In 0.4 the referrer policy is `same-origin`: Chromium otherwise sends an opaque (`null`) Origin for same-origin form POSTs under `no-referrer`, which conflicts with strict origin checks. Cross-origin form requests remain rejected, and signed double-submit CSRF tokens are still mandatory. Real Chromium conformance tests cover this flow. Browser CSP allows same-origin images/fonts and data images for the opt-in asset directory; scripts and remote asset origins stay blocked.

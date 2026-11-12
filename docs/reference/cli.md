@@ -39,3 +39,12 @@ CLI HTTP overrides apply after source declarations. All HTTP settings can also b
 `check` is **not** full static type/name verification: dynamic values, widget references, file access, SQL, and runtime expression restrictions still require execution tests. The native backend intentionally rejects new dynamic/UI/HTTP features it cannot compile. Packaging an installed tool without a Python dependency does not expand that backend's semantics.
 
 Exit status: 0 success, 1 runtime/build/check error, 2 command-line usage error, 130 Ctrl+C.
+
+## Design build helper (0.4)
+
+```sh
+ucl design app.ucl -o app.css
+ucl design app.ucl -o app.css --input input.css --config tailwind.config.js
+```
+
+Compiles static utility class strings using pinned Tailwind CSS 3.4.19 via npx. Requires Node/npm only for this optional build step; runtime stylesheet rendering does not. Custom config replaces default content scanning and important-utility settings and may execute trusted JavaScript/plugins. Tailwind 4 users can compile externally and load the resulting CSS. See the [design guide](../design.md).

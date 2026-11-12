@@ -1,6 +1,6 @@
-; Build from repository root: ISCC /DAppVersion=0.3.0 packaging\windows\ucl-installer.iss
+; Build from repository root: ISCC /DAppVersion=0.4.0 packaging\windows\ucl-installer.iss
 #ifndef AppVersion
-  #define AppVersion "0.3.0"
+  #define AppVersion "0.4.0"
 #endif
 #ifndef OutputBase
   #define OutputBase "ucl-installer"

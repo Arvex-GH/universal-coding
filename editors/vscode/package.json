@@ -1,8 +1,8 @@
 {
   "name": "ucl-language",
   "displayName": "UCL \u2014 Universal Coding Language",
-  "description": "UCL highlighting, snippets, and Run/Check commands",
-  "version": "0.3.0",
+  "description": "UCL highlighting, context-aware completions, hover reference, save diagnostics, snippets and Run/Check commands",
+  "version": "0.4.0",
   "publisher": "ucl-language",
   "license": "MIT",
   "repository": {
@@ -37,12 +37,6 @@
         "path": "./syntaxes/ucl.tmLanguage.json"
       }
     ],
-    "snippets": [
-      {
-        "language": "ucl",
-        "path": "./snippets/ucl.json"
-      }
-    ],
     "commands": [
       {
         "command": "ucl.runFile",
@@ -66,13 +60,29 @@
           "group": "navigation"
         }
       ]
+    },
+    "configuration": {
+      "title": "UCL",
+      "properties": {
+        "ucl.executable": {
+          "type": "string",
+          "default": "ucl",
+          "scope": "machine-overridable",
+          "description": "Path to the UCL executable used for syntax/capability checking on save."
+        },
+        "ucl.checkOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Run ucl check on saved UCL files in trusted workspaces (no program execution)."
+        }
+      }
     }
   },
   "main": "./extension.js",
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": "limited",
-      "description": "Syntax highlighting is available; running UCL requires workspace trust."
+      "description": "Highlighting, completions and hover work without trust; execution and save diagnostics require trust."
     }
   }
 }

@@ -102,7 +102,7 @@ def parse(source):
 
 # Ordered patterns are also consumed by the checker and future editor tooling.
 PATTERNS = {
-    'type': r'type is (gui|browser|server|terminal|database)',
+    'type': r'type is (gui|browser|server|terminal|database|tui)',
     'title': r'title is (.+)',
     'port': r'port is (\d+)',
     'host': r'host is (.+)',
@@ -110,13 +110,27 @@ PATTERNS = {
     'debugging': r'debugging is (on|off)',
     'window_style': r'window style is (.+)',
     'window_size': r'window size is (\d+) x (\d+)',
-    'layout': r'layout is (vertical|horizontal)',
+    'layout': r'layout is (vertical|horizontal|grid(?: (\d+) columns))',
+    'panel': r'show panel (.+) is #([\w-]+)',
+    'place': r'place #([\w-]+) inside #([\w-]+)',
+    'panel_layout': r'panel #([\w-]+) layout is (vertical|horizontal|grid(?: (\d+) columns))',
+    'theme': r'theme is (light|dark)',
+    'design_tokens': r'design tokens is (.+)',
+    'motion': r'motion is (on|off)',
+    'assets': r'assets is (.+)',
+    'stylesheet': r'stylesheet is (.+)',
+    'classes': r'classes #([\w-]+) is (.+)',
+    'state_style': r'style #([\w-]+) when (hover|focus|active|disabled) is (.+)',
+    'responsive_style': r'style #([\w-]+) at (sm|md|lg|xl|2xl) is (.+)',
+    'animate': r'animate #([\w-]+) to (.+) over (\d+) milliseconds',
+    'close_interface': r'close interface',
     'widget_style': r'style #([\w-]+) is (.+)',
     'label_named': r'show (?:label|text) (.+) is #([\w-]+)',
     'input': r'show input (.+) is #([\w-]+)',
     'checkbox': r'show checkbox (.+) is #([\w-]+)',
     'label_update': r'label #([\w-]+) text is (.+)',
     'input_update': r'input #([\w-]+) value is (.+)',
+    'focus_input': r'focus input #([\w-]+)(?: (selecting all))?',
     'read_input': r'read input #([\w-]+) into ([A-Za-z_]\w*)',
     'widget_state': r'(enable|disable|hide|reveal) #([\w-]+)',
     'close_window': r'close window',
@@ -208,17 +222,17 @@ def classify(node):
 
 
 UI_KINDS = {'buttons', 'style', 'click', 'label', 'text', 'window_style', 'window_size',
-            'layout', 'widget_style', 'label_named', 'input', 'checkbox', 'label_update',
+            'panel', 'place', 'panel_layout', 'theme', 'design_tokens', 'motion', 'classes', 'state_style', 'responsive_style', 'animate', 'layout', 'widget_style', 'label_named', 'input', 'checkbox', 'label_update',
             'input_update', 'read_input', 'widget_state'}
 DECLARATIONS = {'type', 'title', 'port', 'host', 'function', 'route', 'database', 'buttons',
                 'style', 'click', 'label', 'object', 'http_settings', 'debugging',
-                'window_style', 'window_size', 'layout', 'label_named', 'input', 'checkbox', 'timer'}
+                'panel', 'place', 'panel_layout', 'theme', 'design_tokens', 'motion', 'assets', 'stylesheet', 'window_style', 'window_size', 'layout', 'label_named', 'input', 'checkbox', 'timer'}
 
 
 def validate(nodes):
     types = {classify(n)[1][0].lower() for n in nodes if classify(n)[0] == 'type'} or {'terminal'}
-    if len(types & {'gui', 'browser', 'server'}) > 1:
-        raise UCLError('choose one application renderer: gui, browser, or server')
+    if len(types & {'gui', 'browser', 'server', 'tui'}) > 1:
+        raise UCLError('choose one application renderer: gui, browser, server, or tui')
     def walk(items, scope='root', loop=False, transaction=False):
         previous = None
         for n in items:
@@ -226,11 +240,12 @@ def validate(nodes):
             expressions = []
             if kind in {'title', 'host', 'print', 'return', 'if', 'repeat', 'respond', 'label',
                         'ask_number', 'while', 'assert', 'append', 'read_file', 'require',
-                        'http_settings', 'window_style', 'label_named', 'input', 'checkbox'}:
+                        'http_settings', 'window_style', 'design_tokens', 'assets', 'stylesheet', 'panel', 'label_named', 'input', 'checkbox'}:
                 expressions = [args[0]]
             elif kind in {'let', 'property', 'database', 'text', 'label_update', 'input_update',
-                          'widget_style', 'ask_text', 'log', 'for', 'respond_typed'}:
+                          'widget_style', 'classes', 'animate', 'ask_text', 'log', 'for', 'respond_typed'}:
                 expressions = [args[1]]
+            elif kind in {'state_style', 'responsive_style'}: expressions = [args[2]]
             elif kind == 'write_file': expressions = [args[1], args[2]]
             elif kind == 'header': expressions = list(args)
             elif kind == 'call': expressions = [f'{args[0]}({args[1]})']
@@ -238,12 +253,24 @@ def validate(nodes):
             for expr in expressions:
                 try: ast.parse(expr, mode='eval')
                 except SyntaxError as e: raise UCLError(f'line {n.line}: invalid expression: {expr}') from e
-            if kind in UI_KINDS and not types & {'gui', 'browser'}:
-                raise UCLError(f'line {n.line}: add type is gui (desktop) or type is browser')
+            if kind in UI_KINDS and not types & {'gui', 'browser', 'tui'}:
+                raise UCLError(f'line {n.line}: add type is gui (desktop), browser, or tui')
+            if kind in {'assets', 'stylesheet', 'classes', 'responsive_style'} and 'browser' not in types:
+                raise UCLError(f'line {n.line}: {kind} requires type is browser')
+            if kind in {'panel', 'place', 'panel_layout'} and 'tui' in types:
+                raise UCLError(f'line {n.line}: nested panels require gui or browser')
+            if kind == 'state_style' and 'tui' in types:
+                raise UCLError(f'line {n.line}: state styles require gui or browser')
+            if kind == 'animate' and 'tui' in types:
+                raise UCLError(f'line {n.line}: animations require gui or browser')
+            if kind == 'close_interface' and not types & {'gui', 'tui'}:
+                raise UCLError(f'line {n.line}: close interface requires gui or tui')
+            if kind == 'focus_input' and 'gui' not in types:
+                raise UCLError(f'line {n.line}: focus input requires type is gui')
             if kind in {'timer', 'close_window'} and 'gui' not in types:
                 message = 'timers require type is gui' if kind == 'timer' else 'close window requires type is gui'
                 raise UCLError(f'line {n.line}: {message}')
-            if kind in {'ask_number', 'ask_text'} and types & {'gui', 'browser', 'server'}:
+            if kind in {'ask_number', 'ask_text'} and types & {'gui', 'browser', 'server', 'tui'}:
                 raise UCLError(f'line {n.line}: terminal input requires a non-GUI, non-HTTP application')
             if kind == 'route' and 'server' not in types:
                 raise UCLError(f'line {n.line}: HTTP routes require type is server')

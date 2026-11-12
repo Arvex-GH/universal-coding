@@ -9,4 +9,18 @@ Syntax highlighting, bracket/comment handling, `.ucl` recognition, snippets, and
 
 A `tasks.json` template for running/checking the current file is documented in `docs/windows.md` in the repository. No Python installation is required by the installed UCL executable.
 
-Snippets: `terminal`, `gui`, `ask`, `route`. This extension is distributed as a release download; it is not claimed to be published to the VS Code Marketplace.
+Capability completion is context-aware: after `type is t`, accept `terminal` with Tab/Enter to finish **only that word**. It never inserts another application block.
+
+Application snippets use explicit prefixes: `ucl-app-terminal`, `ucl-app-gui`. Other templates: `ucl-ask-number`, `ucl-route`, `ucl-label`, `ucl-style`, `ucl-input`, `ucl-log`, `ucl-try`, `ucl-foreach`. Type the prefix and accept the snippet suggestion. Bare keywords such as `terminal`, `gui`, and `input` no longer expand into templates inside statements. This extension is distributed as a release download; it is not claimed to be published to the VS Code Marketplace.
+
+## Assistance in 0.4
+
+- Context-aware capability, command-example, widget-ID, style-property and enum-value recommendations. Suggestions replace an explicit range; accepting a capability never pastes a whole application.
+- Hover a statement/builtin/property for offline reference. Vocabulary is generated from the runtime registry, not fetched over the network.
+- Syntax highlighting distinguishes keywords, widget IDs, strings, numbers, comments, functions/builtins and hex colors. Actual colors depend on your VS Code theme.
+- Saving a `.ucl` file in a **trusted** workspace runs `ucl check FILE` and shows parser/capability failures in Problems and as editor diagnostics. This does not execute the UCL program or evaluate runtime styles. Unsaved edits are not checked automatically. Stale checker results are discarded.
+- Set `ucl.executable` to the installed CLI path if it is not on PATH. Set `ucl.checkOnSave` to false to disable automatic saved-file checks. Checks have a 10-second timeout. Completion/hover/highlighting do not need UCL installed or workspace trust.
+
+This remains a lightweight language extension, not a full semantic language server: it does not infer variable types or validate runtime widget references/styles. Use Run/Check and the language documentation for those boundaries.
+
+Maintainers regenerate `language-data.json` with `python tools/generate_editor.py` from the repository root. Run tests with `node --test editors/vscode/test/extension.test.js`; package with `npx --yes @vscode/vsce@3.6.2 package` from this directory.
