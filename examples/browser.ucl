@@ -1,0 +1,10 @@
+[
+  type is browser
+  title is "UCL in the browser"
+  show text "Browser rendering is an explicit choice."
+  show button "Click Me!" is #hello
+  when button #hello is clicked [
+    button #hello text is "Hello from UCL!"
+  ]
+  button #hello looks black + padding is 15
+]

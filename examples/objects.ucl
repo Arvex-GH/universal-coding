@@ -1,0 +1,14 @@
+[
+  say counter.increment(2)
+  say other.increment(10)
+  say counter.value
+  create other from counter
+
+  object counter [
+    let value be 0
+    to increment(amount) [
+      set self.value to self.value + amount
+      return self.value
+    ]
+  ]
+]

@@ -1,0 +1,11 @@
+[
+  type is gui,
+  title is "My first UCL desktop app",
+  button #1 looks black + padding is 15,
+  when button #1 is clicked [
+    button #1 text is "You clicked me!"
+    say "Hello from the desktop!"
+  ]
+  show button 3x 1. "Click Me!" is #1; 2. "Hello!" is #2; 3. "ByeBye!" is #3,
+  show text "A native desktop window, not a browser."
+]

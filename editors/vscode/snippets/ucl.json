@@ -1,0 +1,6 @@
+{
+  "Terminal application": {"prefix": "terminal", "body": ["[", "  type is terminal", "  $0", "]"], "description": "A terminal UCL program"},
+  "Ask for a number": {"prefix": "ask", "body": "ask for number \"${1:Enter a number: }\" into ${2:value}"},
+  "Native desktop application": {"prefix": "gui", "body": ["[", "  type is gui", "  title is \"${1:My application}\"", "  show button \"${2:Click me}\" is #${3:hello}", "  when button #${3:hello} is clicked [", "    $0", "  ]", "]"]},
+  "HTTP route": {"prefix": "route", "body": ["when ${1|get,post,put,delete,patch|} \"${2:/}\" [", "  respond ${0:true}", "]"]}
+}

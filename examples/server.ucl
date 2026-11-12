@@ -1,0 +1,20 @@
+[
+  type is server
+  port is 8080
+  database app is "app.db"
+  execute "CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, text TEXT NOT NULL)" on app
+
+  when get "/" [
+    respond {"language": "UCL", "routes": list("GET /notes", "POST /notes")}
+  ]
+  when get "/notes" [
+    query "SELECT id, text FROM notes ORDER BY id" on app into notes
+    respond notes
+  ]
+  when post "/notes" [
+    let payload be parse_json(request.body)
+    execute "INSERT INTO notes (text) VALUES (?)" on app using list(payload.text)
+    status is 201
+    respond {"saved": true}
+  ]
+]
