@@ -163,8 +163,45 @@ PATTERNS = {
 }
 
 
+def split_clause(text, separator):
+    """Split English clauses only outside strings, calls and record literals."""
+    quote, escaped, depth = None, False, 0
+    for i, character in enumerate(text):
+        if quote:
+            if escaped: escaped = False
+            elif character == '\\': escaped = True
+            elif character == quote: quote = None
+        elif character in {'"', "'"}: quote = character
+        elif character in '({': depth += 1
+        elif character in ')}': depth -= 1
+        elif depth == 0 and text[i:i + len(separator)].lower() == separator:
+            return text[:i].strip(), text[i + len(separator):].strip()
+    return None
+
+
 def classify(node):
+    prefix = re.match(r'^(write|append|execute|query)\s+(.+)$', node.text, re.I | re.S)
+    if prefix:
+        command, tail = prefix[1].lower(), prefix[2]
+        if command in {'write', 'append'}:
+            parts = split_clause(tail, ' to file ')
+            if parts: return 'write_file', (command, *parts)
+        else:
+            target = None
+            if command == 'query':
+                parts = split_clause(tail, ' into ')
+                if parts: tail, target = parts
+                if target is None or not re.fullmatch(r'[A-Za-z_]\w*', target):
+                    raise UCLError(f'line {node.line}: query requires into NAME')
+            parts = split_clause(tail, ' on ')
+            if not parts: raise UCLError(f'line {node.line}: {command} requires on DATABASE')
+            expression, tail = parts
+            parts = split_clause(tail, ' using ')
+            database, params = parts if parts else (tail, None)
+            if not re.fullmatch(r'[A-Za-z_]\w*', database): raise UCLError(f'line {node.line}: invalid database name')
+            return command, (expression, database, params, target) if command == 'query' else (expression, database, params)
     for name, pattern in PATTERNS.items():
+        if name == 'write_file': continue  # handled with quote-aware clauses above
         m = re.fullmatch(pattern, node.text, re.I | re.S)
         if m: return name, m.groups()
     raise UCLError(f'line {node.line}: unknown statement: {node.text}')

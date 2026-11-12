@@ -177,6 +177,17 @@ class LanguageUpdateTests(unittest.TestCase):
             _, out, _ = ready('[write "Hello" to file ' + filename + '\nappend " 世界" to file ' + filename + '\nread file ' + filename + ' into result\nsay result]')
         self.assertEqual(out, ['Hello 世界'])
 
+    def test_file_clause_words_inside_literals(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filename = json.dumps(str(Path(tmp) / 'a to file b.txt'))
+            _, out, _ = ready('[let names be list()\nappend "a to file b" to names\nwrite "a to file b" to file ' + filename + '\nread file ' + filename + ' into content\nsay content\nsay names]')
+        self.assertEqual(out, ['a to file b', ['a to file b']])
+
+    def test_sql_clause_words_inside_literals(self):
+        r, out, _ = ready('[database db is ":memory:"\nquery "SELECT \' on fake using x into y \' AS value" on db into rows\nsay item(rows, 0).value]')
+        self.assertEqual(out, [' on fake using x into y '])
+        r.close()
+
     def test_file_error_is_catchable(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = json.dumps(str(Path(tmp) / 'missing'))
