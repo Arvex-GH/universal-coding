@@ -185,6 +185,18 @@ class DesignTests(unittest.TestCase):
         r = ready('[type is browser]')
         self.assertEqual(request(HTTPApplication(r))['headers']['Referrer-Policy'],'same-origin')
 
+    def test_tui_ascii_fallback_for_legacy_consoles(self):
+        r = ready('[type is tui\nshow label "ASCII_OK" is #x]')
+        page,_ = render(r.ui,color=False,ascii_only=True)
+        page.encode('cp1252')
+        self.assertIn('ASCII_OK',page)
+        self.assertIn('+---',page)
+        outputs = []
+        with mock.patch('ucl.tui.sys.stdout') as stream:
+            stream.encoding = 'cp1252'
+            run_tui(r,lambda prompt:'q',outputs.append,color=False)
+        self.assertNotIn('┌',outputs[0])
+
     def test_editor_vocabulary_generated(self):
         from tools.generate_editor import data
         self.assertEqual(json.loads(Path('editors/vscode/language-data.json').read_text()),data())

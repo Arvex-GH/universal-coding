@@ -24,7 +24,7 @@ def paint(text, style, color):
     return ('\x1b['+';'.join(codes)+'m'+text+'\x1b[0m') if codes else text
 
 
-def render(ui, width=80, color=False):
+def render(ui, width=80, color=False, ascii_only=False):
     width = max(20,min(width,240))
     visible = [i for i,s in ui.elements.items() if s['visible']]
     columns = ui.columns if ui.direction == 'grid' else max(1,min(12,len(visible))) if ui.direction == 'horizontal' else 1
@@ -61,7 +61,9 @@ def render(ui, width=80, color=False):
         visible = len(re.sub(r'\x1b\[[0-9;]*m','',content))
         lines.append('│'+content+' '*max(0,width-2-visible)+'│')
     lines += ['└'+'─'*(width-2)+'┘', 'Enter a control number to activate/edit; q to quit.']
-    return '\n'.join(lines),actions
+    page = '\n'.join(lines)
+    if ascii_only: page = page.translate(str.maketrans({'┌':'+','┐':'+','└':'+','┘':'+','├':'+','┤':'+','─':'-','│':'|'}))
+    return page,actions
 
 
 def run(runtime, input_fn=None, output=None, color=None):
@@ -69,8 +71,10 @@ def run(runtime, input_fn=None, output=None, color=None):
     output = runtime.output if output is None else output
     color = sys.stdout.isatty() if color is None else color
     ui = runtime.ui
+    try: '┌─│'.encode(sys.stdout.encoding or 'utf-8'); ascii_only = False
+    except (UnicodeEncodeError,LookupError): ascii_only = True
     while not ui.closed:
-        page, actions = render(ui,shutil.get_terminal_size((80,24)).columns,color)
+        page, actions = render(ui,shutil.get_terminal_size((80,24)).columns,color,ascii_only)
         output(page)
         try: command = input_fn('> ').strip()
         except EOFError: break

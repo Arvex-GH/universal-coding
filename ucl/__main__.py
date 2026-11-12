@@ -10,6 +10,10 @@ from . import __version__
 
 
 def main():
+    # Frozen Windows processes may use legacy encodings when redirected.
+    # Keep Unicode app output from crashing the CLI; UTF-8 streams are unchanged.
+    for stream in (sys.stdout,sys.stderr):
+        if hasattr(stream,'reconfigure'): stream.reconfigure(errors='backslashreplace')
     parser = argparse.ArgumentParser(prog='ucl', description='Universal Coding Language')
     parser.add_argument('--version', action='version', version=f'UCL {__version__}')
     commands = parser.add_subparsers(dest='command', required=True)
